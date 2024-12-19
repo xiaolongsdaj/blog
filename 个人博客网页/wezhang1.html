@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FlexBox 示例</title>
+    <link rel="stylesheet" href="styles1.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>弹性盒模型</h1>
+      <p>
+        是一个 CSS3 新增布局模块，官方称为 CSS Flexible Box Layout
+        Module，用于实现容器里项目的对齐、方向、排序（即使在项目大小位置、动态生成的情况）,
+        分配空白空间
+        。弹性盒模型最大的特性在于，能够动态修改子元素的宽度和高度，以满足在不同尺寸屏幕下的恰当布局。
+      </p>
+      <p>
+        Flex 是 Flexible Box
+        的缩写，意为”弹性布局”，用来为盒状模型提供最大的灵活性。
+      </p>
+      <div class="flex-box-demo">
+        <div class="flex-item">任何一个容器都可以指定为 Flex 布局。</div>
+        <div class="flex-item">行内元素也可以使用 Flex 布局。</div>
+        <div class="flex-item">Webkit 内核的浏览器，必须加上-webkit前缀。</div>
+      </div>
+      <p>
+        设为 Flex 布局以后，子元素的float、clear和vertical-align属性将失效。
+      </p>
+
+      <h2>基本知识</h2>
+      <p>
+        弹性盒子是由弹性容器（flex container）和弹性子元素（flex item）组成...
+      </p>
+
+      <!-- 省略其他内容 -->
+
+      <h3>弹性容器的相关属性</h3>
+      <ul>
+        <li>flex-direction: 设置主轴方向，确定弹性子元素的排列方式</li>
+        <li>flex-wrap: 当弹性子元素超出弹性容器范围时是否换行</li>
+        <li>flex-flow: flex-direction 和 flex-wrap 的快捷方式，复合属性</li>
+        <li>justify-content: 设置弹性子元素主轴上的对齐方式</li>
+        <li>align-items: 设置弹性子元素侧轴上的对齐方式</li>
+        <li>
+          align-content: 侧轴上有空白时且有多行时，设置弹性子元素侧轴的对齐方式
+        </li>
+      </ul>
+
+      <!-- 省略其他内容 -->
+    </div>
+  </body>
+</html>

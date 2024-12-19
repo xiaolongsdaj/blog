@@ -1,0 +1,58 @@
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    width: 80%;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+    color: #333;
+}
+
+.flex-box-demo {
+    display: flex;
+    gap: 10px; /* 弹性子元素之间的间距 */
+    margin-top: 20px;
+}
+
+.flex-item {
+    background-color: #e0e0e0;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* 示例：flex-direction 属性 */
+.flex-direction-demo {
+    display: flex;
+    margin-top: 20px;
+}
+
+.flex-direction-demo div {
+    flex: 1; /* 弹性子元素等宽 */
+    padding: 10px;
+    border: 1px solid #ccc;
+    text-align: center;
+}
+
+.row { flex-direction: row; }
+.row-reverse { flex-direction: row-reverse; }
+.column { flex-direction: column; }
+.column-reverse { flex-direction: column-reverse; }
+
+/* 为了在页面中展示这些效果，我们可以添加一些样式来区分 */
+.row div { background-color: #ffcccc; }
+.row-reverse div { background-color: #ccffcc; }
+.column div { background-color: #ccccff; }
+.column-reverse div { background-color: #ffffcc; }
+
+/* 注意：这里只是为了展示效果，实际应用中应该根据需要调整样式 */
