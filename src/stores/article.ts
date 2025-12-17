@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import articleApi from '../api/article'
-import type { Article, Category, Tag, PaginationResponse } from '../api/article'
+import type { Article, Category, Tag } from '../api/article'
 
 interface ArticleState {
   articles: Article[]
@@ -32,11 +32,11 @@ export const useArticleStore = defineStore('article', {
     async getArticles(page: number = 1, pageSize: number = 10, categoryId?: number, tagId?: number, keyword?: string) {
       this.loading = true
       try {
-        const response: PaginationResponse<Article> = await articleApi.getArticles(page, pageSize, categoryId, tagId, keyword)
-        this.articles = response.items
+        const response = await articleApi.getArticles(page, pageSize, categoryId, tagId, keyword)
+        this.articles = response.data.items
         this.page = page
-        this.total = response.total
-        return response.items
+        this.total = response.data.total
+        return response.data.items
       } catch (error) {
         console.error('获取文章列表失败:', error)
         return []
@@ -49,9 +49,9 @@ export const useArticleStore = defineStore('article', {
     async getArticleDetail(id: number) {
       this.loading = true
       try {
-        const article = await articleApi.getArticleDetail(id)
-        this.currentArticle = article
-        return article
+        const response = await articleApi.getArticleDetail(id)
+        this.currentArticle = response.data
+        return response.data
       } catch (error) {
         console.error('获取文章详情失败:', error)
         return null
@@ -63,9 +63,9 @@ export const useArticleStore = defineStore('article', {
     // 获取分类列表
     async getCategories() {
       try {
-        const categories = await articleApi.getCategories()
-        this.categories = categories
-        return categories
+        const response = await articleApi.getCategories()
+        this.categories = response.data
+        return response.data
       } catch (error) {
         console.error('获取分类列表失败:', error)
         return []
@@ -75,9 +75,9 @@ export const useArticleStore = defineStore('article', {
     // 获取标签列表
     async getTags() {
       try {
-        const tags = await articleApi.getTags()
-        this.tags = tags
-        return tags
+        const response = await articleApi.getTags()
+        this.tags = response.data
+        return response.data
       } catch (error) {
         console.error('获取标签列表失败:', error)
         return []
@@ -113,7 +113,7 @@ export const useArticleStore = defineStore('article', {
       }
 
       try {
-        await articleApi.incrementViewCount() 
+        await articleApi.incrementViewCount(id)
       } catch (error) {
         console.error('增加阅读量失败:', error)
       }
@@ -131,7 +131,7 @@ export const useArticleStore = defineStore('article', {
       }
 
       try {
-        await articleApi.incrementCommentCount()
+        await articleApi.incrementCommentCount(id)
       } catch (error) {
         console.error('增加评论数失败:', error)
       }

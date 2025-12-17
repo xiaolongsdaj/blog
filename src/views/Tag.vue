@@ -28,7 +28,7 @@
                   {{ article.title }}
                 </router-link>
               </h3>
-              <p class="article-excerpt">{{ article.excerpt }}</p>
+              <p class="article-excerpt">{{ article.summary }}</p>
               <div class="article-meta">
                 <span class="date">
                   <el-icon><Calendar /></el-icon>
@@ -36,8 +36,8 @@
                 </span>
                 <span class="category">
                   <el-icon><Collection /></el-icon>
-                  <router-link :to="{ name: 'CategoryArticles', params: { id: article.categoryId } }">
-                    {{ article.categoryName }}
+                  <router-link :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
+                    {{ article.category.name }}
                   </router-link>
                 </span>
                 <span class="views">

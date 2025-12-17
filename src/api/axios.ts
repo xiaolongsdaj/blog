@@ -2,8 +2,8 @@ import axios from 'axios'
 
 // 创建axios实例
 const apiClient = axios.create({
-  baseURL: '/api',
-  timeout: 10000,
+  baseURL: '/api', // 实际项目中可以根据环境变量配置不同的baseURL
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -12,10 +12,10 @@ const apiClient = axios.create({
 // 请求拦截器
 apiClient.interceptors.request.use(
   (config) => {
-    // 从本地存储获取token
-    const token = localStorage.getItem('token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    // 从本地存储获取accessToken
+    const accessToken = localStorage.getItem('accessToken')
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
     }
     return config
   },
@@ -27,6 +27,7 @@ apiClient.interceptors.request.use(
 // 响应拦截器
 apiClient.interceptors.response.use(
   (response) => {
+    // 直接返回响应数据
     return response.data
   },
   (error) => {
@@ -36,8 +37,10 @@ apiClient.interceptors.response.use(
       
       // 处理401未授权错误
       if (error.response.status === 401) {
-        // 清除本地存储的token
-        localStorage.removeItem('token')
+        // 清除本地存储的token信息
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userInfo')
         // 跳转到登录页面
         window.location.href = '/login'
       }

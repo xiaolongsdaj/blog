@@ -41,6 +41,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: hidden;
 }
 
 /* 链接样式 */
@@ -48,6 +49,7 @@ a {
   color: var(--primary-color);
   text-decoration: none;
   transition: color 0.3s ease;
+  text-decoration: none;
 }
 
 a:hover {
@@ -177,3 +179,22 @@ button:focus-visible {
   }
 }
 
+/* 隐藏所有滚动条 */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+/* 针对Firefox的滚动条隐藏 */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

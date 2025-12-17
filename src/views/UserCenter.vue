@@ -228,7 +228,7 @@ const passwordRules = {
   newPassword: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
-    { pattern: /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,20}$/, message: '密码必须包含字母和数字', trigger: 'blur' }
+    { pattern: /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[a-zA-Z\d!@#$%^&*(),.?":{}|<>]{6,20}$/, message: '密码必须包含字母,符号和数字', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -333,7 +333,8 @@ const updatePassword = async () => {
   await passwordFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-        // 模拟API请求
+        // 调用user store中的updatePassword方法
+        await userStore.updatePassword(passwordForm.currentPassword, passwordForm.newPassword)
         ElMessage.success('密码修改成功')
         // 重置表单
         passwordForm.currentPassword = ''
@@ -400,6 +401,7 @@ onMounted(() => {
 
 .user-center-header {
   margin-bottom: 40px;
+  text-align: center;
 
   h1 {
     font-size: 2rem;
@@ -411,9 +413,13 @@ onMounted(() => {
 .user-center-content {
   display: flex;
   gap: 40px;
+  height: calc(100vh - 200px); /* 设置固定高度，减去头部和边距 */
+  overflow: hidden;
 
   @media (max-width: 768px) {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 }
 
@@ -421,9 +427,15 @@ onMounted(() => {
 .sidebar {
   width: 280px;
   flex-shrink: 0;
+  position: sticky;
+  top: 20px;
+  height: calc(100% - 40px);
+  overflow-y: auto;
 
   @media (max-width: 768px) {
     width: 100%;
+    position: static;
+    height: auto;
   }
 }
 
@@ -499,9 +511,13 @@ onMounted(() => {
   border-radius: 12px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
   padding: 40px;
+  overflow-y: auto;
+  max-height: 100%;
 
   @media (max-width: 768px) {
     padding: 20px;
+    overflow-y: visible;
+    max-height: none;
   }
 }
 

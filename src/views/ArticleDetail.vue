@@ -18,8 +18,8 @@
             </span>
             <span class="category">
               <el-icon><Collection /></el-icon>
-              <router-link :to="{ name: 'CategoryArticles', params: { id: article.categoryId } }">
-                {{ article.categoryName }}
+              <router-link :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
+                {{ article.category.name }}
               </router-link>
             </span>
             <span class="views">

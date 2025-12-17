@@ -4,10 +4,9 @@
       <div class="register-card">
         <div class="register-header">
           <h1 class="register-title">
-            <el-icon><Plus /></el-icon>
-            用户注册
+            注册
           </h1>
-          <p class="register-subtitle">创建您的个人博客账号</p>
+         
         </div>
 
         <div class="register-form">
@@ -135,7 +134,7 @@ const validateAgreement = (_rule: any, value: boolean, callback: any) => {
 const registerRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' },
+    { min: 6, max: 20, message: '用户名长度在 6 到 20 个字符', trigger: 'blur' },
     { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名只能包含字母、数字和下划线', trigger: 'blur' }
   ],
   email: [
@@ -145,7 +144,7 @@ const registerRules = {
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' },
-    { pattern: /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d!@#$%^&*()_+]{6,20}$/, message: '密码必须包含字母和数字', trigger: 'blur' }
+    { pattern: /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])[a-zA-Z\d!@#$%^&*(),.?":{}|<>]{6,20}$/, message: '密码必须包含字母,符号和数字', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
@@ -161,15 +160,15 @@ const registerRules = {
 // 处理注册
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-
+  // console.log(111111,registerFormRef.value.username)
   await registerFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       registering.value = true
       try {
-        await userStore.register(registerForm.username, registerForm.email, registerForm.password)
+        const res = await userStore.register(registerForm.username, registerForm.email, registerForm.password, registerForm.confirmPassword)
+        console.log(222,res)
         ElMessage.success('注册成功')
         
-        // 注册成功后跳转到登录页面
         router.push('/login')
       } catch (error) {
         console.error('注册失败:', error)
@@ -192,7 +191,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .register-page {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  // background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;

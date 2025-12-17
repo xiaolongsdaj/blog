@@ -12,24 +12,42 @@ interface UserState {
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
-    userInfo: null,
-    token: localStorage.getItem('token'),
-    isLoggedIn: !!localStorage.getItem('token')
-  }),
+    userInfo: (() => {
+      const storedUserInfo = localStorage.getItem('userInfo');
+      try {
+        return storedUserInfo ? JSON.parse(storedUserInfo) : null;
+      } catch {
+        // 处理无效的JSON数据
+        localStorage.removeItem('userInfo');
+        return null;
+      }
+    })(),
+    token: localStorage.getItem('accessToken'),
+    isLoggedIn: !!localStorage.getItem('accessToken')
+  }), 
 
   actions: {
     // 登录
     async login(username: string, password: string) {
       try {
         const loginData: LoginRequest = { username, password }
-        const response = await userApi.login(loginData)
         
-        this.token = response.token
-        this.userInfo = response.user
+        const response = await userApi.login(loginData)
+        console.log('登录响应数据:', response)
+        
+        // 正确处理响应数据
+        const { accessToken, user } = response.data || {}
+        console.log('登录成功:', response.data?.accessToken)
+        
+        this.token = accessToken
+        this.userInfo = user
         this.isLoggedIn = true
 
-        // 保存token到本地存储
-        localStorage.setItem('token', response.token)
+        // 保存token和userInfo到本地存储
+        localStorage.setItem('accessToken', accessToken)
+        if (user) {
+          localStorage.setItem('userInfo', JSON.stringify(user))
+        }
 
         return true
       } catch (error) {
@@ -39,17 +57,20 @@ export const useUserStore = defineStore('user', {
     },
 
     // 注册
-    async register(username: string, email: string, password: string) {
+    async register(username: string, email: string, password: string, confirmPassword: string) {
       try {
-        const registerData: RegisterRequest = { username, email, password }
+        const registerData: RegisterRequest = { username, email, password, confirmPassword }
         const response = await userApi.register(registerData)
         
-        this.token = response.token
-        this.userInfo = response.user
+        const { accessToken, user } = response.data || {}
+        
+        this.token = accessToken
+        this.userInfo = user
         this.isLoggedIn = true
 
-        // 保存token到本地存储
-        localStorage.setItem('token', response.token)
+        // 保存token和userInfo到本地存储
+        localStorage.setItem('accessToken', accessToken)
+        localStorage.setItem('userInfo', JSON.stringify(user))
 
         return true
       } catch (error) {
@@ -64,18 +85,36 @@ export const useUserStore = defineStore('user', {
       this.userInfo = null
       this.isLoggedIn = false
 
-      // 清除本地存储中的token
-      localStorage.removeItem('token')
+      // 清除本地存储中的token和userInfo
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('userInfo')
     },
 
     // 获取用户信息
     async getUserInfo() {
-      if (!this.token) return null
+      const token = this.token || localStorage.getItem('accessToken')
+      if (!token) return null
 
       try {
-        const user = await userApi.getCurrentUser()
-        this.userInfo = user
-        return user
+        let userId = this.userInfo?.id
+        if (!userId) {
+          const storedUserInfo = localStorage.getItem('userInfo')
+          if (storedUserInfo) {
+            const parsedUserInfo = JSON.parse(storedUserInfo)
+            userId = parsedUserInfo.id
+          }
+        }
+        
+        if (!userId) {
+          console.error('获取用户信息失败: 无法获取用户ID')
+          return null
+        }
+        
+        const response = await userApi.getCurrentUser(userId)
+        this.userInfo = response
+        // 更新localStorage中的用户信息
+        localStorage.setItem('userInfo', JSON.stringify(response))
+        return response
       } catch (error) {
         console.error('获取用户信息失败:', error)
         return null
@@ -85,9 +124,11 @@ export const useUserStore = defineStore('user', {
     // 更新用户信息
     async updateUserInfo(userData: Partial<User>) {
       try {
-        const updatedUser = await userApi.updateUser(userData)
-        this.userInfo = updatedUser
-        return updatedUser
+        const response = await userApi.updateUser(userData)
+        this.userInfo = response
+        // 更新localStorage中的用户信息
+        localStorage.setItem('userInfo', JSON.stringify(response))
+        return response
       } catch (error) {
         console.error('更新用户信息失败:', error)
         return null
@@ -95,9 +136,9 @@ export const useUserStore = defineStore('user', {
     },
 
     // 更新密码
-    async updatePassword(_currentPassword: string, _newPassword: string) {
+    async updatePassword(currentPassword: string, newPassword: string) {
       try {
-        await userApi.updatePassword()
+        await userApi.updatePassword(currentPassword, newPassword)
         return true
       } catch (error) {
         console.error('更新密码失败:', error)
@@ -106,13 +147,15 @@ export const useUserStore = defineStore('user', {
     },
 
     // 上传头像
-    async uploadAvatar(_file: File) {
+    async uploadAvatar(file: File) {
       try {
-        const avatarUrl = await userApi.uploadAvatar()
+        const response = await userApi.uploadAvatar(file)
         if (this.userInfo) {
-          this.userInfo.avatar = avatarUrl
+          this.userInfo.avatar = response.avatar
+          // 更新localStorage中的用户信息
+          localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
         }
-        return avatarUrl
+        return response.avatar
       } catch (error) {
         console.error('上传头像失败:', error)
         return null

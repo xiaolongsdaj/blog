@@ -57,18 +57,21 @@
         
         <!-- 用户菜单 -->
         <div class="user-menu">
-          <template v-if="userStore.isLoggedIn && userStore.userInfo">
+          <template v-if="userStore.isLoggedIn">
             <!-- 登录后显示用户头像和下拉菜单 -->
             <el-dropdown>
               <div class="user-avatar">
-                <el-avatar :src="userStore.userInfo.avatar" size="small">{{ userStore.userInfo.username[0] }}</el-avatar>
+                <el-avatar :src="userStore.userInfo?.avatar" size="small">{{ userStore.userInfo?.username?.[0] || 'U' }}</el-avatar>
               </div>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <router-link to="/user" class="dropdown-item">
-                    <el-icon><User /></el-icon>
-                    <span>个人中心</span>
-                  </router-link>
+                  <el-dropdown-item>
+                    <router-link to="/user">
+                      <el-icon><User /></el-icon>
+                      <span>个人中心</span>
+                    </router-link>
+                  </el-dropdown-item>
+                  
                   <el-dropdown-item @click="handleLogout">
                     <el-icon><SwitchButton /></el-icon>
                     <span>退出登录</span>
@@ -113,7 +116,7 @@
         </nav>
         
         <div class="mobile-user-menu">
-          <template v-if="userStore.isLoggedIn && userStore.userInfo">
+          <template v-if="userStore.isLoggedIn">
             <router-link to="/user" class="mobile-nav-item" @click="hideMobileMenu">
               <el-icon><User /></el-icon>
               <span>个人中心</span>
@@ -143,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useUIStore } from '../../stores/ui'
@@ -158,6 +161,14 @@ const searchKeyword = ref('')
 const currentRoute = computed(() => route.path)
 const mobileMenuVisible = computed(() => uiStore.mobileMenuVisible)
 const searchVisible = computed(() => uiStore.searchVisible)
+
+// 页面加载时，如果有token但没有用户信息，自动获取用户信息
+onMounted(() => {
+  if (userStore.isLoggedIn && !userStore.userInfo) {
+    userStore.getUserInfo()
+    console.log('用户信息:', userStore.userInfo)
+  }
+})
 
 // 切换搜索框显示
 const toggleSearch = () => {
@@ -293,7 +304,7 @@ watch(() => route.path, () => {
 
 .header-right {
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 10px;
   position: relative;
 }
@@ -336,7 +347,7 @@ watch(() => route.path, () => {
 
 .user-menu {
   display: flex;
-  align-items: center;
+  align-items: right;
   gap: 10px;
 }
 

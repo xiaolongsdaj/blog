@@ -3,7 +3,7 @@
     <Header />
     <main class="main-content">
       <div class="content-wrapper">
-        <Sidebar v-if="sidebarVisible" />
+        <!-- <Sidebar v-if="sidebarVisible" /> -->
         <div class="main-area" :class="{ 'sidebar-hidden': !sidebarVisible }">
           <router-view />
         </div>
@@ -18,7 +18,6 @@ import { ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from './Header.vue'
 import Footer from './Footer.vue'
-import Sidebar from './Sidebar.vue'
 import { useUIStore } from '../../stores/ui'
 
 const uiStore = useUIStore()

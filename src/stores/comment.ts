@@ -25,8 +25,8 @@ export const useCommentStore = defineStore('comment', {
       this.loading = true
       try {
         const response = await commentApi.getComments(articleId, page, pageSize)
-        this.currentArticleComments = response.items
-        return { comments: response.items, total: response.total }
+        this.currentArticleComments = response.data.items
+        return { comments: response.data.items, total: response.data.total }
       } catch (error) {
         console.error('获取评论失败:', error)
         return { comments: [], total: 0 }
@@ -39,7 +39,8 @@ export const useCommentStore = defineStore('comment', {
     async postComment(articleId: number, content: string, parentId?: number) {
       this.submitting = true
       try {
-        const newComment = await commentApi.addComment(articleId, content, parentId)
+        const response = await commentApi.addComment(articleId, content, parentId)
+        const newComment = response.data
         
         // 设置回复数组
         newComment.replies = newComment.replies || []
@@ -86,11 +87,11 @@ export const useCommentStore = defineStore('comment', {
             if (comment.isLiked) {
               comment.likeCount--
               // 调用API取消点赞
-              commentApi.unlikeComment().catch(err => console.error('取消点赞失败:', err))
+              commentApi.unlikeComment(commentId).catch(err => console.error('取消点赞失败:', err))
             } else {
               comment.likeCount++
               // 调用API点赞
-              commentApi.likeComment().catch(err => console.error('点赞失败:', err))
+              commentApi.likeComment(commentId).catch(err => console.error('点赞失败:', err))
             }
             comment.isLiked = !comment.isLiked
             return true
@@ -123,7 +124,7 @@ export const useCommentStore = defineStore('comment', {
       const deleted = findAndDeleteComment(this.currentArticleComments)
       if (deleted) {
         try {
-          await commentApi.deleteComment()
+          await commentApi.deleteComment(commentId)
         } catch (error) {
           console.error('删除评论失败:', error)
         }

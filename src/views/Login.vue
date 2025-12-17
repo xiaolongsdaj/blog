@@ -4,10 +4,8 @@
       <div class="login-card">
         <div class="login-header">
           <h1 class="login-title">
-            <el-icon><User /></el-icon>
-            用户登录
+            登录
           </h1>
-          <p class="login-subtitle">登录到您的个人博客账号</p>
         </div>
 
         <div class="login-form">
@@ -61,12 +59,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const route = useRoute()
+// const route = useRoute() // 暂时注释，未使用
 const userStore = useUserStore()
 
 // 表单引用
@@ -86,11 +84,14 @@ const loginForm = reactive({
 const loginRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+    { min: 6, max: 10, message: '用户名长度在 6 到 10 个字符', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  rememberMe: [
+    { required: true, message: '请选择是否记住我', trigger: 'change' }
   ]
 }
 
@@ -99,23 +100,36 @@ const handleLogin = async () => {
   if (!loginFormRef.value) return
 
   await loginFormRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      loggingIn.value = true
-      try {
-        await userStore.login(loginForm.username, loginForm.password)
-        ElMessage.success('登录成功')
-        
-        // 获取跳转地址，如果没有则跳转到首页
-        const redirect = route.query.redirect as string || '/'
-        router.push(redirect)
-      } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error('登录失败，请检查用户名和密码是否正确')
-      } finally {
-        loggingIn.value = false
-      }
-    }
-  })
+          if (valid) {
+            // console.log('表单验证通过，准备登录:', loginForm)
+            loggingIn.value = true
+            try {
+              const loginSuccess = await userStore.login(loginForm.username, loginForm.password)
+              // console.log('登录结果:', loginSuccess)
+              // console.log('登录后用户状态:', {
+              //   isLoggedIn: userStore.isLoggedIn,
+              //   userInfo: userStore.userInfo,
+              //   token: userStore.token
+              // })
+              
+              if (loginSuccess) {
+                ElMessage.success('登录成功')
+                // // 获取跳转地址，如果没有则跳转到首页
+                // const redirect = route.query.redirect as string || '/'
+                router.push('/')
+              } else {
+                ElMessage.error('登录失败，请检查用户名和密码是否正确')
+              }
+            } catch (error) {
+              console.error('登录失败:', error)
+              ElMessage.error('登录失败，请检查用户名和密码是否正确')
+            } finally {
+              loggingIn.value = false
+            }
+          } else {
+            // console.log('表单验证失败')
+          }
+        })
 }
 
 // 初始化
@@ -129,7 +143,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .login-page {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  // background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
