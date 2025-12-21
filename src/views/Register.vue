@@ -311,4 +311,19 @@ onMounted(() => {
     color: #66b1ff;
   }
 }
+//解决输入框自动填充背景颜色问题得几种方式
+
+/* 综合解决方案，兼容性最好 */
+// :deep(.el-input__inner:-webkit-autofill) {
+//   -webkit-text-fill-color: #190404 !important;
+//   -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+//   transition: background-color 5000s ease-in-out 0s !important;
+// }
+
+// 使用 box-shadow 覆盖背景色（推荐）
+:deep(.el-input__inner:-webkit-autofill) {
+  -webkit-text-fill-color: #190404;
+  -webkit-box-shadow: 0 0 0px 1000px white inset !important;
+  box-shadow: 0 0 0px 1000px white inset !important;
+}
 </style>

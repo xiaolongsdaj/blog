@@ -9,7 +9,7 @@
         <!-- 左侧导航 -->
         <div class="sidebar">
           <div class="user-profile">
-            <el-avatar :size="120" :src="userInfo?.avatar || 'https://via.placeholder.com/120'" />
+            <el-avatar :size="120" :src="userInfo?.avatar || 'http://localhost:3000/uploads/file-1766157600984-819031621.png'" />
             <h2>{{ userInfo?.username }}</h2>
             <p class="email">{{ userInfo?.email }}</p>
           </div>
@@ -48,7 +48,7 @@
           <!-- 个人信息 -->
           <div v-if="activeTab === 'profile'" class="tab-content">
             <h2 class="tab-title">个人信息</h2>
-            <el-form :model="userInfo" label-width="120px" class="profile-form">
+            <el-form :model="userInfo" :rules="profileRules" ref="profileFormRef" label-width="120px" class="profile-form">
               <el-form-item label="用户名">
                 <el-input v-model="userInfo.username" disabled />
               </el-form-item>
@@ -58,9 +58,8 @@
               <el-form-item label="头像">
                 <el-upload
                   class="avatar-uploader"
-                  action="#"
+                  :http-request="handleAvatarUpload"
                   :show-file-list="false"
-                  :on-success="handleAvatarUpload"
                   :before-upload="beforeAvatarUpload"
                 >
                   <img v-if="userInfo.avatar" :src="userInfo.avatar" class="avatar">
@@ -75,7 +74,12 @@
 
           <!-- 我的文章 -->
           <div v-if="activeTab === 'articles'" class="tab-content">
-            <h2 class="tab-title">我的文章</h2>
+            <div class="tab-header">
+              <h2 class="tab-title">我的文章</h2>
+              <el-button type="primary" @click="handleCreateArticle">
+              <el-icon><Plus /></el-icon> 创建文章
+            </el-button>
+            </div>
             <div v-if="userArticles.length > 0" class="article-list">
               <el-card
                 v-for="article in userArticles"
@@ -86,19 +90,19 @@
                   <div class="card-header">
                     <router-link :to="`/article/${article.id}`" class="article-title">{{ article.title }}</router-link>
                     <div class="article-actions">
-                      <el-button type="primary" size="small">编辑</el-button>
-                      <el-button type="danger" size="small">删除</el-button>
-                    </div>
+                  <el-button type="primary" size="small" @click="editArticle(article)">编辑</el-button>
+                  <el-button type="danger" size="small" @click="deleteArticle(article.id)">删除</el-button>
+                </div>
                   </div>
                 </template>
                 <div class="article-content">
-                  <p class="summary">{{ article.excerpt }}</p>
-                  <div class="article-meta">
-                    <span class="category">{{ article.categoryName }}</span>
-                    <span class="date">{{ formatDate(article.createdAt) }}</span>
-                    <span class="views">
-                      <el-icon><View /></el-icon> {{ article.viewCount }}
-                    </span>
+                    <p class="summary">{{ article.summary }}</p>
+                    <div class="article-meta">
+                      <span class="category">{{ article.category?.name || '无分类' }}</span>
+                      <span class="date">{{ formatDate(article.createdAt) }}</span>
+                      <span class="views">
+                        <el-icon><View /></el-icon> {{ article.viewCount }}
+                      </span>
                     <span class="comments">
                       <el-icon><ChatDotRound /></el-icon> {{ article.commentCount }}
                     </span>
@@ -115,8 +119,8 @@
             <el-pagination
               v-if="userArticles.length > 0"
               layout="total, prev, pager, next"
-              :total="userArticles.length"
-              :page-size="5"
+              :total="userArticlesTotal"
+              :page-size="pageSize"
               @current-change="handlePageChange"
             />
           </div>
@@ -136,9 +140,9 @@
                 <div class="comment-meta">
                   <span class="date">{{ formatDate(comment.createdAt) }}</span>
                   <router-link :to="`/article/${comment.articleId}`" class="article-link">
-                    查看文章
+                    {{ comment.article.title }}
                   </router-link>
-                  <el-button type="danger" size="small" class="delete-btn">
+                  <el-button type="danger" size="small" class="delete-btn" @click="deleteComment(comment.id)">
                     <el-icon><Delete /></el-icon> 删除
                   </el-button>
                 </div>
@@ -150,8 +154,8 @@
             <el-pagination
               v-if="userComments.length > 0"
               layout="total, prev, pager, next"
-              :total="userComments.length"
-              :page-size="5"
+              :total="userCommentsTotal"
+              :page-size="10"
               @current-change="handlePageChange"
             />
           </div>
@@ -178,17 +182,121 @@
       </div>
     </div>
   </div>
+
+  <!-- 文章编辑/创建模态框 -->
+  <el-dialog
+    v-model="showArticleModal"
+    :title="isEditing ? '编辑文章' : '创建文章'"
+    width="80%"
+    class="article-modal"
+  >
+    <el-form
+      :model="articleForm"
+      :rules="articleRules"
+      ref="articleFormRef"
+      label-width="120px"
+      class="article-form"
+    >
+      <el-form-item label="标题" prop="title">
+        <el-input v-model="articleForm.title" placeholder="请输入文章标题" />
+      </el-form-item>
+
+      <el-form-item label="摘要" prop="summary">
+        <el-input
+          v-model="articleForm.summary"
+          type="textarea"
+          :rows="3"
+          placeholder="请输入文章摘要"
+        />
+      </el-form-item>
+
+      <el-form-item label="内容" prop="content">
+        <el-input
+          v-model="articleForm.content"
+          type="textarea"
+          :rows="10"
+          placeholder="请输入文章内容"
+        />
+      </el-form-item>
+
+      <el-form-item label="分类">
+        <el-select
+          v-model="articleForm.categoryId"
+          placeholder="请选择分类"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="category in categories"
+            :key="category.id"
+            :label="category.name"
+            :value="category.id"
+          />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="标签">
+        <el-select
+          v-model="articleForm.tags"
+          multiple
+          placeholder="请选择标签"
+          style="width: 100%"
+        >
+          <el-option
+            v-for="tag in tags"
+            :key="tag.id"
+            :label="tag.name"
+            :value="tag.id"
+          />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="状态" prop="status">
+        <el-select v-model="articleForm.status" placeholder="请选择状态" style="width: 100%">
+          <el-option label="草稿" value="DRAFT" />
+          <el-option label="公共" value="PUBLISHED" />
+          <el-option label="私有" value="PRIVATE" />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="封面图">
+        <el-upload
+          class="image-uploader"
+          action="#"
+          :show-file-list="true"
+          :on-success="handleCoverUpload"
+          :before-upload="beforeCoverUpload"
+        >
+          <el-button type="primary">
+            <el-icon><Plus /></el-icon> 上传封面图
+          </el-button>
+        </el-upload>
+        <img v-if="articleForm.coverImage" :src="articleForm.coverImage" class="cover-preview" />
+      </el-form-item>
+    </el-form>
+
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="showArticleModal = false">取消</el-button>
+        <el-button type="primary" @click="submitArticleForm">保存</el-button>
+      </div>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
+import { useCommentStore } from '../stores/comment'
+import articleApi from '../api/article'
+import type { Article } from '../api/article'
+import type { Comment } from '../api/comment'
 
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
+const commentStore = useCommentStore()
 
 
 // 当前激活的标签页
@@ -201,6 +309,21 @@ const userInfo = reactive({
   avatar: userStore.userInfo?.avatar,
   email: userStore.userInfo?.email
 })
+
+// 用户信息表单引用
+const profileFormRef = ref()
+
+// 用户信息表单验证规则
+const profileRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 6, max: 20, message: '用户名长度在 6 到 20 个字符', trigger: 'blur' }
+  ],
+  email: [
+    { required: true, message: '请输入邮箱', trigger: 'blur' },
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ]
+}
 
 // 密码修改表单
 const passwordFormRef = ref()
@@ -236,68 +359,281 @@ const passwordRules = {
   ]
 }
 
-// 模拟用户文章列表
-const userArticles = ref([
-  {
-    id: 1,
-    title: 'Vue 3 新特性详解',
-    excerpt: '本文详细介绍了Vue 3的主要新特性，包括Composition API、Teleport、Suspense等。',
-    content: '# Vue 3 新特性详解\n\nVue 3是Vue.js的最新版本，带来了许多令人兴奋的新特性...',
-    coverImage: 'https://via.placeholder.com/800x400',
-    createdAt: '2023-06-15T10:30:00',
-    updatedAt: '2023-06-15T10:30:00',
-    viewCount: 1234,
-    commentCount: 56,
-    categoryId: 1,
-    categoryName: '前端技术',
-    tags: [{ id: 1, name: 'Vue' }, { id: 2, name: 'JavaScript' }]
-  },
-  {
-    id: 2,
-    title: 'TypeScript 入门指南',
-    excerpt: 'TypeScript是JavaScript的超集，提供了类型系统和ES6+的特性支持。',
-    content: '# TypeScript 入门指南\n\nTypeScript是一种由Microsoft开发的开源编程语言...',
-    coverImage: 'https://via.placeholder.com/800x400',
-    createdAt: '2023-06-10T14:20:00',
-    updatedAt: '2023-06-10T14:20:00',
-    viewCount: 892,
-    commentCount: 34,
-    categoryId: 1,
-    categoryName: '前端技术',
-    tags: [{ id: 3, name: 'TypeScript' }, { id: 2, name: 'JavaScript' }]
-  }
-])
+// 用户文章列表
+const userArticles = ref<Article[]>([])
+const userArticlesTotal = ref(0)
+const currentPage = ref(1)
+const pageSize = ref(10)
+const loading = ref(false)
 
-// 模拟用户评论列表
-const userComments = ref([
-  {
-    id: 1,
-    articleId: 1,
-    articleTitle: 'Vue 3 新特性详解',
-    content: '这篇文章写得非常好，让我对Vue 3有了更深入的了解！',
-    createdAt: '2023-06-16T15:30:00',
-    updatedAt: '2023-06-16T15:30:00'
-  },
-  {
-    id: 2,
-    articleId: 2,
-    articleTitle: 'TypeScript 入门指南',
-    content: '感谢分享，TypeScript确实是前端开发的好帮手！',
-    createdAt: '2023-06-11T10:20:00',
-    updatedAt: '2023-06-11T10:20:00'
+// 加载用户文章
+const loadUserArticles = async () => {
+  if (!userStore.userInfo?.id) return
+  
+  loading.value = true
+  try {
+    const response = await articleApi.getUserArticles(userStore.userInfo.id, currentPage.value, pageSize.value)
+    userArticles.value = response.data.articles
+    userArticlesTotal.value = response.data.pagination.total
+  } catch (error) {
+    console.error('获取用户文章列表失败:', error)
+    ElMessage.error('获取文章列表失败，请稍后重试')
+  } finally {
+    loading.value = false
   }
-])
-
-// 菜单选择
-const handleMenuSelect = (index: string) => {
-  activeTab.value = index
 }
+
+// 用户评论列表
+const userComments = ref<Comment[]>([])
+const userCommentsTotal = ref(0)
+const commentsLoading = ref(false)
+
+// 加载用户评论
+const loadUserComments = async () => {
+  if (!userStore.userInfo?.id) return
+  
+  commentsLoading.value = true
+  try {
+    const { comments, total } = await commentStore.getUserComments(userStore.userInfo.id, currentPage.value, 10)
+    userComments.value = comments
+    userCommentsTotal.value = total
+  } catch (error) {
+    console.error('获取用户评论列表失败:', error)
+    ElMessage.error('获取评论列表失败，请稍后重试')
+  } finally {
+    commentsLoading.value = false
+  }
+}
+
+// 文章模态框相关
+const showArticleModal = ref(false)
+const isEditing = ref(false)
+const articleFormRef = ref()
+
+// 文章表单数据
+const articleForm = reactive({
+  id: 0,
+  title: '',
+  summary: '',
+  content: '',
+  coverImage: '',
+  status: 'DRAFT',
+  categoryId: null,
+  tags: []
+})
+
+// 文章表单验证规则
+const articleRules = {
+  title: [
+    { required: true, message: '请输入文章标题', trigger: 'blur' },
+    { min: 5, max: 100, message: '标题长度在 5 到 100 个字符', trigger: 'blur' }
+  ],
+  summary: [
+    { required: true, message: '请输入文章摘要', trigger: 'blur' },
+    { min: 10, max: 200, message: '摘要长度在 10 到 200 个字符', trigger: 'blur' }
+  ],
+  content: [
+    { required: true, message: '请输入文章内容', trigger: 'blur' },
+    { min: 20, message: '内容长度不能少于 20 个字符', trigger: 'blur' }
+  ],
+  status: [
+    { required: true, message: '请选择文章状态', trigger: 'change' }
+  ]
+}
+
+// 分类和标签数据
+import type { Category, Tag } from '../api/article'
+const categories = ref<Category[]>([])
+const tags = ref<Tag[]>([])
+
+// 加载分类和标签
+const loadCategoriesAndTags = async () => {
+  try {
+    const [categoriesResponse, tagsResponse] = await Promise.all([
+      articleApi.getCategories(),
+      articleApi.getTags()
+    ])
+    categories.value = categoriesResponse.data
+    tags.value = tagsResponse.data
+  } catch (error) {
+    console.error('获取分类和标签失败:', error)
+    ElMessage.error('获取分类和标签失败，请稍后重试')
+  }
+}
+
+// 提交文章表单
+const submitArticleForm = async () => {
+  if (!articleFormRef.value) return
+
+  await articleFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      try {
+        if (isEditing.value) {
+          // 更新文章
+          await articleApi.updateArticle(articleForm.id, articleForm)
+          ElMessage.success('文章更新成功')
+        } else {
+          // 创建文章
+          await articleApi.createArticle(articleForm)
+          ElMessage.success('文章创建成功')
+        }
+
+        // 关闭模态框并重置表单
+        showArticleModal.value = false
+        resetArticleForm()
+
+        // 刷新文章列表
+        await loadUserArticles()
+      } catch (error) {
+        console.error(isEditing.value ? '更新文章失败:' : '创建文章失败:', error)
+        ElMessage.error(isEditing.value ? '更新失败，请稍后重试' : '创建失败，请稍后重试')
+      }
+    }
+  })
+}
+
+// 封面图上传成功处理
+const handleCoverUpload = (_response: any, file: any) => {
+  // 模拟上传成功
+  articleForm.coverImage = URL.createObjectURL(file.raw)
+  ElMessage.success('封面图上传成功')
+}
+
+// 封面图上传前验证
+const beforeCoverUpload = (file: any) => {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片格式！')
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB！')
+  }
+
+  return isImage && isLt2M
+}
+
+// 编辑文章
+const editArticle = async (article: Article) => {
+  // 如果还没有加载分类和标签，先加载
+  if (categories.value.length === 0) {
+    await loadCategoriesAndTags()
+  }
+  
+  // 填充表单数据，将status转换为大写，提取tags的ID
+  Object.assign(articleForm, {
+    id: article.id,
+    title: article.title,
+    summary: article.summary,
+    content: article.content,
+    coverImage: article.coverImage,
+    status: article.status.toUpperCase(),
+    categoryId: article.categoryId,
+    tags: article.tags.map(tag => tag.id)
+  })
+  
+  // 设置为编辑模式并打开模态框
+  isEditing.value = true
+  showArticleModal.value = true
+}
+
+// 重置文章表单
+const resetArticleForm = () => {
+  if (articleFormRef.value) {
+    articleFormRef.value.resetFields()
+  }
+  
+  // 重置表单数据
+  Object.assign(articleForm, {
+    id: 0,
+    title: '',
+    summary: '',
+    content: '',
+    coverImage: '',
+    status: 'DRAFT',
+    categoryId: null,
+    tags: []
+  })
+  
+  // 设置为创建模式
+  isEditing.value = false
+}
+
+// 删除文章
+const deleteArticle = async (articleId: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这篇文章吗？此操作不可恢复！', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await articleApi.deleteArticle(articleId)
+    ElMessage.success('文章删除成功')
+    
+    // 刷新文章列表
+    // 如果当前页只有一篇文章且不是第一页，则返回上一页
+    if (userArticles.value.length === 1 && currentPage.value > 1) {
+      currentPage.value--
+    }
+    await loadUserArticles()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除文章失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
+  }
+}
+
+// 删除评论
+const deleteComment = async (commentId: number) => {
+  try {
+    await ElMessageBox.confirm('确定要删除这条评论吗？此操作不可恢复！', '删除确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    
+    await commentStore.deleteComment(commentId)
+    ElMessage.success('评论删除成功')
+    
+    // 刷新评论列表
+    // 如果当前页只有一条评论且不是第一页，则返回上一页
+    if (userComments.value.length === 1 && currentPage.value > 1) {
+      currentPage.value--
+    }
+    await loadUserComments()
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除评论失败:', error)
+      ElMessage.error('删除失败，请稍后重试')
+    }
+  }
+}
+
+
 
 // 更新用户信息
 const updateUserProfile = async () => {
+  if (!profileFormRef.value) return
+  
   try {
-    await userStore.updateUserInfo(userInfo)
-    ElMessage.success('个人信息更新成功')
+    // 表单验证
+    await profileFormRef.value.validate(async (valid: boolean) => {
+      if (valid) {
+        // 创建要更新的数据对象，只包含可编辑字段
+        const updateData = {
+          id: userInfo.id,
+          email: userInfo.email,
+          avatar: userInfo.avatar
+          // username保持不变，不发送到后端
+        }
+        
+        await userStore.updateUserInfo(updateData)
+        ElMessage.success('个人信息更新成功')
+      }
+    })
   } catch (error) {
     console.error('更新用户信息失败:', error)
     ElMessage.error('更新失败，请稍后重试')
@@ -305,10 +641,21 @@ const updateUserProfile = async () => {
 }
 
 // 头像上传
-const handleAvatarUpload = (_response: any, file: any) => {
-  // 模拟上传成功
-  userInfo.avatar = URL.createObjectURL(file.raw)
-  ElMessage.success('头像上传成功')
+const handleAvatarUpload = async (req: any) => {
+  const file = req.file
+  try {
+    const avatarUrl = await userStore.uploadAvatar(file)
+    if (avatarUrl) {
+      // 更新本地用户信息
+      userInfo.avatar = avatarUrl
+      ElMessage.success('头像上传成功')
+    } else {
+      ElMessage.error('头像上传失败')
+    }
+  } catch (error) {
+    console.error('头像上传失败:', error)
+    ElMessage.error('头像上传失败，请稍后重试')
+  }
 }
 
 // 头像上传前验证
@@ -357,8 +704,12 @@ const handleLogout = () => {
 
 // 分页处理
 const handlePageChange = (page: number) => {
-  // 这里可以添加分页逻辑
-  console.log('当前页码:', page)
+  currentPage.value = page
+  if (activeTab.value === 'articles') {
+    loadUserArticles()
+  } else if (activeTab.value === 'comments') {
+    loadUserComments()
+  }
 }
 
 // 格式化日期
@@ -373,6 +724,17 @@ const formatDate = (dateString: string) => {
   })
 }
 
+// 监听标签页变化，当切换到对应标签时加载相应数据
+const handleMenuSelect = (index: string) => {
+  activeTab.value = index
+  if (index === 'articles') {
+    loadUserArticles()
+    loadCategoriesAndTags()
+  } else if (index === 'comments') {
+    loadUserComments()
+  }
+}
+
 // 初始化
 onMounted(() => {
   // 如果用户未登录，跳转到登录页面
@@ -384,7 +746,23 @@ onMounted(() => {
   if (userStore.isLoggedIn && !userStore.userInfo) {
     userStore.getUserInfo()
   }
+  
+  // 根据当前激活的标签页加载相应数据
+  if (activeTab.value === 'articles') {
+    loadUserArticles()
+    loadCategoriesAndTags()
+  } else if (activeTab.value === 'comments') {
+    loadUserComments()
+  }
 })
+
+// 监听创建文章按钮点击，确保打开模态框前加载分类和标签数据
+const handleCreateArticle = async () => {
+  if (categories.value.length === 0) {
+    await loadCategoriesAndTags()
+  }
+  showArticleModal.value = true
+}
 </script>
 
 <style scoped lang="scss">
@@ -532,6 +910,13 @@ onMounted(() => {
   margin-bottom: 30px;
   padding-bottom: 10px;
   border-bottom: 2px solid #f0f2f5;
+}
+
+.tab-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 /* 个人信息表单 */
@@ -707,5 +1092,22 @@ onMounted(() => {
 .el-pagination {
   margin-top: 40px;
   text-align: center;
+}
+
+/* 文章模态框 */
+.article-modal {
+  .article-form {
+    max-width: 100%;
+  }
+
+  .image-uploader {
+    margin-bottom: 20px;
+  }
+
+  .cover-preview {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 8px;
+  }
 }
 </style>

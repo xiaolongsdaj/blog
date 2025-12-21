@@ -16,8 +16,15 @@ export interface Article {
   createdAt: string
   updatedAt: string
   publishedAt: string
-  category: { id: number; name: string; slug: string }
+  status: string
+  isPrivate: boolean
+  deletedAt: string | null
+  userId: number
+  categoryId: number | null
+  category: { id: number; name: string; slug: string } | null
   tags: Array<{ id: number; name: string; slug: string }>
+  user: { id: number; username: string; avatar: string | null }
+  _count: { comments: number; likes: number }
 }
 
 // 分类类型定义
@@ -36,56 +43,75 @@ export interface Tag {
 
 // API响应类型
 export interface ApiResponse<T> {
-  code: number
+  success: boolean
   message: string
   data: T
 }
 
 // 分页响应类型
 export interface PaginationResponse<T> {
-  items: T[]
-  total: number
-  page: number
-  pageSize: number
+  articles: T[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
 }
 
 // 文章API服务
 const articleApi = {
-  // 获取文章列表
-  getArticles: async (page: number = 1, pageSize: number = 10, categoryId?: number, tagId?: number, keyword?: string): Promise<ApiResponse<PaginationResponse<Article>>> => {
-    const params = { page, pageSize, categoryId, tagId, keyword }
-    return apiClient.get('/articles', { params })
+  // 首页获取所有文章列表
+  getArticles: async (page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    const params = { page, limit }
+    return apiClient.get('/api/articles', { params })
   },
 
   // 获取文章详情
   getArticleDetail: async (id: number): Promise<ApiResponse<Article>> => {
-    return apiClient.get(`/articles/${id}`)
+    return apiClient.get(`/api/articles/${id}`)
+  },
+    // 获取用户文章列表
+  getUserArticles: async (userId: number, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    return apiClient.get(`/api/articles/user/${userId}`, { params: { page, limit } })
+  },
+
+  // 创建文章
+  createArticle: async (articleData: Partial<Article>): Promise<ApiResponse<Article>> => {
+    return apiClient.post('/api/articles', articleData)
+  },
+
+  // 更新文章
+  updateArticle: async (id: number, articleData: Partial<Article>): Promise<ApiResponse<Article>> => {
+    return apiClient.put(`/api/articles/${id}`, articleData)
+  },
+
+  // 删除文章
+  deleteArticle: async (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/api/articles/${id}`)
   },
 
   // 获取分类列表
   getCategories: async (): Promise<ApiResponse<Category[]>> => {
-    return apiClient.get('/categories')
+    return apiClient.get('/api/categories')
   },
 
   // 获取标签列表
   getTags: async (): Promise<ApiResponse<Tag[]>> => {
-    return apiClient.get('/tags')
+    return apiClient.get('/api/tags')
   },
 
-  // 增加阅读量
-  incrementViewCount: async (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/articles/${id}/views`)
-  },
+  // // 增加阅读量
+  // incrementViewCount: async (id: number): Promise<ApiResponse<void>> => {
+  //   return apiClient.post(`/articles/${id}/views`)
+  // },
 
-  // 增加评论数
-  incrementCommentCount: async (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/articles/${id}/comments/count`)
-  },
+  // // 增加评论数
+  // incrementCommentCount: async (id: number): Promise<ApiResponse<void>> => {
+  //   return apiClient.post(`/articles/${id}/comments/count`)
+  // },
 
-  // 获取用户文章列表
-  getUserArticles: async (userId: number, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
-    return apiClient.get(`/users/${userId}/articles`, { params: { page, limit } })
-  }
+
 }
 
 export default articleApi

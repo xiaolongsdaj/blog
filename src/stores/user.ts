@@ -94,9 +94,9 @@ export const useUserStore = defineStore('user', {
     async getUserInfo() {
       const token = this.token || localStorage.getItem('accessToken')
       if (!token) return null
-
       try {
         let userId = this.userInfo?.id
+        console.log('当前用户ID:', userId)
         if (!userId) {
           const storedUserInfo = localStorage.getItem('userInfo')
           if (storedUserInfo) {
@@ -111,6 +111,10 @@ export const useUserStore = defineStore('user', {
         }
         
         const response = await userApi.getCurrentUser(userId)
+        // 处理头像URL，确保只存储相对路径
+        if (response.avatar && response.avatar.includes('http')) {
+          response.avatar = response.avatar.replace('http://localhost:3000', '')
+        }
         this.userInfo = response
         // 更新localStorage中的用户信息
         localStorage.setItem('userInfo', JSON.stringify(response))
@@ -149,13 +153,17 @@ export const useUserStore = defineStore('user', {
     // 上传头像
     async uploadAvatar(file: File) {
       try {
-        const response = await userApi.uploadAvatar(file)
-        if (this.userInfo) {
-          this.userInfo.avatar = response.avatar
+        // 导入 uploadApi 以避免循环依赖
+        const { default: uploadApi } = await import('../api/upload')
+        const response = await uploadApi.uploadImage(file)
+        if (response.success && this.userInfo) {
+          // 处理头像URL，确保只存储相对路径
+          const avatarUrl = response.data.url
+          this.userInfo.avatar = avatarUrl.includes('http') ? avatarUrl.replace('http://localhost:3000', '') : avatarUrl
           // 更新localStorage中的用户信息
           localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
         }
-        return response.avatar
+        return response.success ? (response.data.url.includes('http') ? response.data.url.replace('http://localhost:3000', '') : response.data.url) : null
       } catch (error) {
         console.error('上传头像失败:', error)
         return null

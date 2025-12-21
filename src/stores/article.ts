@@ -28,18 +28,19 @@ export const useArticleStore = defineStore('article', {
   }),
 
   actions: {
-    // 获取文章列表
-    async getArticles(page: number = 1, pageSize: number = 10, categoryId?: number, tagId?: number, keyword?: string) {
+    // 首页获取文章列表
+    async getArticles(page: number = 1, limit: number = 10,) {
       this.loading = true
       try {
-        const response = await articleApi.getArticles(page, pageSize, categoryId, tagId, keyword)
-        this.articles = response.data.items
+        const response = await articleApi.getArticles(page, limit)
+        this.articles = response.data.articles
         this.page = page
-        this.total = response.data.total
-        return response.data.items
+        this.total = response.data.pagination.total
+
+        return response.data
       } catch (error) {
         console.error('获取文章列表失败:', error)
-        return []
+        return { articles: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } }
       } finally {
         this.loading = false
       }
@@ -61,80 +62,80 @@ export const useArticleStore = defineStore('article', {
     },
 
     // 获取分类列表
-    async getCategories() {
-      try {
-        const response = await articleApi.getCategories()
-        this.categories = response.data
-        return response.data
-      } catch (error) {
-        console.error('获取分类列表失败:', error)
-        return []
-      }
-    },
+    // async getCategories() {
+    //   try {
+    //     const response = await articleApi.getCategories()
+    //     this.categories = response.data
+    //     return response.data
+    //   } catch (error) {
+    //     console.error('获取分类列表失败:', error)
+    //     return []
+    //   }
+    // },
 
     // 获取标签列表
-    async getTags() {
-      try {
-        const response = await articleApi.getTags()
-        this.tags = response.data
-        return response.data
-      } catch (error) {
-        console.error('获取标签列表失败:', error)
-        return []
-      }
-    },
+    // async getTags() {
+    //   try {
+    //     const response = await articleApi.getTags()
+    //     this.tags = response.data
+    //     return response.data
+    //   } catch (error) {
+    //     console.error('获取标签列表失败:', error)
+    //     return []
+    //   }
+    // },
 
     // 获取分类下的文章
-    async getArticlesByCategory(categoryId: number, page: number = 1) {
-      this.currentCategory = this.categories.find(c => c.id === categoryId) || null
-      return this.getArticles(page, 10, categoryId)
-    },
+    // async getArticlesByCategory(categoryId: number, page: number = 1) {
+    //   this.currentCategory = this.categories.find(c => c.id === categoryId) || null
+    //   return this.getArticles(page, 10, categoryId)
+    // },
 
     // 获取标签下的文章
-    async getArticlesByTag(tagId: number, page: number = 1) {
-      this.currentTag = this.tags.find(t => t.id === tagId) || null
-      return this.getArticles(page, 10, undefined, tagId)
-    },
+    // async getArticlesByTag(tagId: number, page: number = 1) {
+    //   this.currentTag = this.tags.find(t => t.id === tagId) || null
+    //   return this.getArticles(page, 10, undefined, tagId)
+    // },
 
-    // 搜索文章
-    async searchArticles(keyword: string, page: number = 1) {
-      return this.getArticles(page, 10, undefined, undefined, keyword)
-    },
+    // // 搜索文章
+    // async searchArticles(keyword: string, page: number = 1) {
+    //   return this.getArticles(page, 10, undefined, undefined, keyword)
+    // },
 
     // 增加阅读量
-    async incrementViewCount(id: number) {
-      if (this.currentArticle && this.currentArticle.id === id) {
-        this.currentArticle.viewCount++
-      }
+    // async incrementViewCount(id: number) {
+    //   if (this.currentArticle && this.currentArticle.id === id) {
+    //     this.currentArticle.viewCount++
+    //   }
 
-      const article = this.articles.find(a => a.id === id)
-      if (article) {
-        article.viewCount++
-      }
+    //   const article = this.articles.find(a => a.id === id)
+    //   if (article) {
+    //     article.viewCount++
+    //   }
 
-      try {
-        await articleApi.incrementViewCount(id)
-      } catch (error) {
-        console.error('增加阅读量失败:', error)
-      }
-    },
+    //   try {
+    //     await articleApi.incrementViewCount(id)
+    //   } catch (error) {
+    //     console.error('增加阅读量失败:', error)
+    //   }
+    // },
 
-    // 增加评论数
-    async incrementCommentCount(id: number) {
-      if (this.currentArticle && this.currentArticle.id === id) {
-        this.currentArticle.commentCount++
-      }
+    // // 增加评论数
+    // async incrementCommentCount(id: number) {
+    //   if (this.currentArticle && this.currentArticle.id === id) {
+    //     this.currentArticle.commentCount++
+    //   }
 
-      const article = this.articles.find(a => a.id === id)
-      if (article) {
-        article.commentCount++
-      }
+    //   const article = this.articles.find(a => a.id === id)
+    //   if (article) {
+    //     article.commentCount++
+    //   }
 
-      try {
-        await articleApi.incrementCommentCount(id)
-      } catch (error) {
-        console.error('增加评论数失败:', error)
-      }
-    }
+    //   try {
+    //     await articleApi.incrementCommentCount(id)
+    //   } catch (error) {
+    //     console.error('增加评论数失败:', error)
+    //   }
+    // }
   }
 })

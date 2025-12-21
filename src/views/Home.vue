@@ -29,9 +29,10 @@
           <div class="article-meta">
             <span class="category">
               <el-icon><Collection /></el-icon>
-              <router-link :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
+              <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
                 {{ article.category.name }}
               </router-link>
+              <span v-else>无分类</span>
             </span>
             <span class="date">
               <el-icon><Calendar /></el-icon>
@@ -127,6 +128,7 @@ const loadArticles = async () => {
   articles.value = articleStore.articles
   total.value = articleStore.total
 }
+console.log(1111111,)
 
 // 分页大小变化
 const handleSizeChange = (size: number) => {

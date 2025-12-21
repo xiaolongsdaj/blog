@@ -18,9 +18,10 @@
             </span>
             <span class="category">
               <el-icon><Collection /></el-icon>
-              <router-link :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
+              <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
                 {{ article.category.name }}
               </router-link>
+              <span v-else>无分类</span>
             </span>
             <span class="views">
               <el-icon><View /></el-icon>
@@ -146,13 +147,13 @@
             class="comment-item"
           >
             <div class="comment-avatar">
-                <el-avatar :src="comment.avatar" size="large">
-                  {{ comment.username[0] }}
+                <el-avatar :src="comment.user.avatar" size="large">
+                  {{ comment.user.username[0] }}
                 </el-avatar>
               </div>
               <div class="comment-content">
                 <div class="comment-header">
-                  <span class="comment-author">{{ comment.username }}</span>
+                  <span class="comment-author">{{ comment.user.username }}</span>
                   <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
                 </div>
               <div class="comment-body">{{ comment.content }}</div>
@@ -161,9 +162,9 @@
                   <el-icon><ChatLineSquare /></el-icon>
                   回复
                 </button>
-                <button class="comment-action-btn">
+                <button class="comment-action-btn" @click="commentStore.likeComment(comment.id)">
                   <el-icon><Star /></el-icon>
-                  {{ comment.likeCount }}
+                  {{ comment._count.likes }}
                 </button>
               </div>
 
@@ -175,13 +176,13 @@
                   class="reply-item"
                 >
                   <div class="comment-avatar">
-                <el-avatar :src="reply.avatar" size="small">
-                  {{ reply.username[0] }}
+                <el-avatar :src="reply.user.avatar" size="small">
+                  {{ reply.user.username[0] }}
                 </el-avatar>
               </div>
               <div class="comment-content">
                 <div class="comment-header">
-                  <span class="comment-author">{{ reply.username }}</span>
+                  <span class="comment-author">{{ reply.user.username }}</span>
                   <span class="comment-date">{{ formatDate(reply.createdAt) }}</span>
                 </div>
                 <div class="comment-body">
@@ -192,9 +193,9 @@
                         <el-icon><ChatLineSquare /></el-icon>
                         回复
                       </button>
-                      <button class="comment-action-btn">
+                      <button class="comment-action-btn" @click="commentStore.likeComment(reply.id)">
                   <el-icon><Star /></el-icon>
-                  {{ reply.likeCount }}
+                  {{ reply._count.likes }}
                 </button>
                     </div>
                   </div>
@@ -300,7 +301,8 @@ const articleId = computed(() => Number(route.params.id))
 
 // 获取文章数据
 const article = computed(() => articleStore.currentArticle)
-const comments = computed(() => commentStore.comments)
+const comments = computed(() => commentStore.currentArticleComments)
+console.log(11111122,comments.value)
 
 // 渲染后的内容
 const renderedContent = computed(() => {
@@ -332,10 +334,11 @@ const loadArticleDetail = async () => {
   loading.value = true
   try {
     await articleStore.getArticleDetail(articleId.value)
-    // 增加阅读量
-    await articleStore.incrementViewCount(articleId.value)
     // 加载评论
     await commentStore.getComments(articleId.value)
+    // 增加阅读量
+    // await articleStore.incrementViewCount(articleId.value)
+    
   } catch (error) {
     console.error('加载文章详情失败:', error)
   } finally {

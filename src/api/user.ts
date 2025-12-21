@@ -73,15 +73,15 @@ const userApi = {
   },
 
   // 上传头像
-  uploadAvatar: async (file: File): Promise<{ avatar: string }> => {
-    const formData = new FormData()
-    formData.append('avatar', file)
-    return apiClient.post('/api/users/avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
-  }
+  // uploadAvatar: async (file: File): Promise<{ avatar: string }> => {
+  //   const formData = new FormData()
+  //   formData.append('avatar', file)
+  //   return apiClient.post('/api/users/avatar', formData, {
+  //     headers: {
+  //       'Content-Type': 'multipart/form-data'
+  //     }
+  //   })
+  // }
 }
 
 export default userApi

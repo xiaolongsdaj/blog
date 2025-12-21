@@ -59,9 +59,10 @@
                 </span>
                 <span class="category">
                   <el-icon><Collection /></el-icon>
-                  <router-link :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
+                  <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
                     {{ article.category.name }}
                   </router-link>
+                  <span v-else>无分类</span>
                 </span>
                 <span class="views">
                   <el-icon><View /></el-icon>
