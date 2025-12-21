@@ -63,9 +63,9 @@
         >
           <!-- 评论头部 -->
           <div class="comment-header-info">
-            <el-avatar :size="40" :src="comment.avatar || 'https://via.placeholder.com/40'" />
+            <el-avatar :size="40" :src="comment.user?.avatar || 'https://via.placeholder.com/40'" />
             <div class="comment-author-info">
-              <span class="author-name">{{ comment.username }}</span>
+              <span class="author-name">{{ comment.user?.username || '匿名用户' }}</span>
               <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
             </div>
           </div>
@@ -74,94 +74,21 @@
           <div class="comment-content">
             <p>{{ comment.content }}</p>
           </div>
-
-          <!-- 评论操作 -->
-          <div class="comment-actions">
-            <span class="action-btn" @click="replyComment(comment)">
-              <el-icon><ChatDotRound /></el-icon>
-              回复
-            </span>
-            <span class="action-btn" @click="likeComment(comment)">
-              <el-icon :color="comment.isLiked ? '#ff4d4f' : ''"><Star /></el-icon>
-              {{ comment.likeCount }} 喜欢
-            </span>
-          </div>
-
-          <!-- 回复列表 -->
-          <div v-if="comment.replies && comment.replies.length > 0" class="replies-list">
-            <div
-              v-for="reply in comment.replies"
-              :key="reply.id"
-              class="reply-item"
-            >
-              <div class="reply-header">
-                <el-avatar :size="32" :src="reply.avatar || 'https://via.placeholder.com/32'" />
-                <div class="reply-author-info">
-                  <span class="author-name">{{ reply.username }}</span>
-                  <span class="reply-date">{{ formatDate(reply.createdAt) }}</span>
-                </div>
-              </div>
-              <div class="reply-content">
-                <p>{{ reply.content }}</p>
-              </div>
-              <div class="reply-actions">
-                <span class="action-btn" @click="replyComment(reply)">
-                  <el-icon><ChatDotRound /></el-icon>
-                  回复
-                </span>
-                <span class="action-btn" @click="likeComment(reply)">
-                  <el-icon :color="reply.isLiked ? '#ff4d4f' : ''"><Star /></el-icon>
-                  {{ reply.likeCount }} 喜欢
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 回复表单 -->
-          <div v-if="replyToComment && replyToComment.id === comment.id" class="reply-form-section">
-            <el-card class="reply-form-card">
-              <div class="reply-form-header">
-                <span>回复 @{{ comment.username }}</span>
-                <el-button type="text" @click="cancelReply">取消</el-button>
-              </div>
-              <el-form :model="replyForm" :rules="replyRules" ref="replyFormRef" class="reply-form">
-                <el-form-item prop="content">
-                  <el-input
-                    v-model="replyForm.content"
-                    type="textarea"
-                    :rows="3"
-                    placeholder="写下你的回复..."
-                    resize="none"
-                  ></el-input>
-                </el-form-item>
-                <el-form-item>
-                  <el-button
-                    type="primary"
-                    @click="submitReply"
-                    :loading="submittingReply"
-                    class="submit-btn"
-                  >
-                    发表回复
-                  </el-button>
-                </el-form-item>
-              </el-form>
-            </el-card>
-          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 分页 -->
-    <div v-if="comments.length > 0 && total > pageSize" class="comment-pagination">
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 分页 -->
+      <div v-if="total > pageSize" class="comment-pagination">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -171,6 +98,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { useCommentStore } from '../../stores/comment'
 import { ElMessage } from 'element-plus'
+import { ChatDotRound } from '@element-plus/icons-vue'
 
 // 定义组件属性
 import type { Comment } from '../../api/comment'
@@ -228,19 +156,8 @@ const commentForm = reactive({
   content: ''
 })
 
-// 回复表单
-const replyFormRef = ref()
-const replyForm = reactive({
-  content: ''
-})
-
 // 提交状态
 const submittingComment = ref(false)
-const submittingReply = ref(false)
-
-// 回复目标
-const replyToComment = ref<Comment | null>(null)
-
 // 表单验证规则
 const commentRules = {
   content: [
@@ -249,12 +166,6 @@ const commentRules = {
   ]
 }
 
-const replyRules = {
-  content: [
-    { required: true, message: '请输入回复内容', trigger: 'blur' },
-    { min: 1, max: 300, message: '回复内容长度在 1 到 300 个字符', trigger: 'blur' }
-  ]
-}
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -280,11 +191,12 @@ const submitComment = async () => {
           props.articleId,
           commentForm.content
         )
-
-        // 评论已通过 store 内部添加
-
-        // 清空表单
         commentForm.content = ''
+
+        // 发表成功后重新获取评论列表
+        const { comments: newComments, total: newTotal } = await commentStore.getComments(props.articleId, currentPage.value, pageSize.value)
+        comments.value = newComments
+        total.value = newTotal
 
         ElMessage.success('评论发表成功')
       } catch (error) {
@@ -297,67 +209,35 @@ const submitComment = async () => {
   })
 }
 
-// 回复评论
-const replyComment = (comment: any) => {
-  replyToComment.value = comment
-}
-
-// 取消回复
-const cancelReply = () => {
-  replyToComment.value = null
-  replyForm.content = ''
-}
-
-// 提交回复
-const submitReply = async () => {
-  if (!replyFormRef.value || !replyToComment.value) return
-
-  await replyFormRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      submittingReply.value = true
-      try {
-        // 使用 store 提交回复
-        await commentStore.postComment(
-          props.articleId,
-          replyForm.content,
-          replyToComment.value!.id
-        )
-
-        // 清空表单并关闭回复框
-        replyForm.content = ''
-        cancelReply()
-
-        ElMessage.success('回复发表成功')
-      } catch (error) {
-        console.error('发表回复失败:', error)
-        ElMessage.error('回复发表失败，请稍后重试')
-      } finally {
-        submittingReply.value = false
-      }
-    }
-  })
-}
-
-// 点赞评论
-const likeComment = (comment: Comment) => {
-  if (!isLoggedIn.value) {
-    ElMessage.warning('请先登录后再点赞')
-    return
+// 分页大小变化
+const handleSizeChange = async (newSize: number) => {
+  loading.value = true
+  try {
+    const { comments: newComments, total: newTotal } = await commentStore.getComments(props.articleId, 1, newSize)
+    comments.value = newComments
+    total.value = newTotal
+  } catch (error) {
+    console.error('获取评论列表失败:', error)
+    ElMessage.error('获取评论列表失败')
+  } finally {
+    loading.value = false
   }
-
-  // 使用 store 处理点赞
-  commentStore.likeComment(comment.id)
 }
 
-// 分页处理
-const handleCurrentChange = (page: number) => {
-  currentPage.value = page
+// 当前页码变化
+const handleCurrentChange = async (newPage: number) => {
+  loading.value = true
+  try {
+    const { comments: newComments, total: newTotal } = await commentStore.getComments(props.articleId, newPage, pageSize.value)
+    comments.value = newComments
+    total.value = newTotal
+  } catch (error) {
+    console.error('获取评论列表失败:', error)
+    ElMessage.error('获取评论列表失败')
+  } finally {
+    loading.value = false
+  }
 }
-
-const handleSizeChange = (size: number) => {
-  pageSize.value = size
-}
-
 // 监听文章ID变化
 watch(() => props.articleId, async (newArticleId) => {
   if (newArticleId) {
@@ -1040,7 +920,7 @@ watch(() => props.articleId, async (newArticleId) => {
         }
       }
     }
-  }
+  
 
   .reply-form-section {
     margin-top: 20px;
@@ -1166,7 +1046,7 @@ watch(() => props.articleId, async (newArticleId) => {
       }
     }
   }
-}
+
 
 .comment-pagination {
   margin-top: 40px;

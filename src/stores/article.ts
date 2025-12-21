@@ -36,7 +36,7 @@ export const useArticleStore = defineStore('article', {
         this.articles = response.data.articles
         this.page = page
         this.total = response.data.pagination.total
-
+        console.log(123321,response.data)
         return response.data
       } catch (error) {
         console.error('获取文章列表失败:', error)
@@ -52,6 +52,7 @@ export const useArticleStore = defineStore('article', {
       try {
         const response = await articleApi.getArticleDetail(id)
         this.currentArticle = response.data
+        console.log(66666,this.currentArticle)
         return response.data
       } catch (error) {
         console.error('获取文章详情失败:', error)

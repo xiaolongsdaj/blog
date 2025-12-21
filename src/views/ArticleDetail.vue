@@ -16,13 +16,6 @@
               <el-icon><Calendar /></el-icon>
               {{ formatDate(article.createdAt) }}
             </span>
-            <span class="category">
-              <el-icon><Collection /></el-icon>
-              <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
-                {{ article.category.name }}
-              </router-link>
-              <span v-else>无分类</span>
-            </span>
             <span class="views">
               <el-icon><View /></el-icon>
               {{ article.viewCount }}
@@ -34,27 +27,9 @@
           </div>
         </header>
 
-        <!-- 文章封面 -->
-        <div class="article-cover" v-if="article.coverImage">
-          <img :src="article.coverImage" :alt="article.title" class="cover-image" loading="lazy" />
-        </div>
-
         <!-- 文章正文 -->
         <div class="article-body">
           <div class="markdown-body" v-html="renderedContent"></div>
-        </div>
-
-        <!-- 文章标签 -->
-        <div class="article-tags">
-          <router-link 
-            v-for="tag in article.tags" 
-            :key="tag.id"
-            :to="{ name: 'TagArticles', params: { id: tag.id } }"
-            class="tag-item"
-          >
-            <el-icon><Label /></el-icon>
-            {{ tag.name }}
-          </router-link>
         </div>
 
         <!-- 文章操作 -->
@@ -72,22 +47,6 @@
             <span>复制链接</span>
           </button>
         </div>
-
-        <!-- 上一篇/下一篇 -->
-        <div class="article-nav">
-          <div class="nav-item prev" v-if="prevArticle">
-            <router-link :to="{ name: 'ArticleDetail', params: { id: prevArticle.id } }">
-              <span class="nav-label">上一篇</span>
-              <span class="nav-title">{{ prevArticle.title }}</span>
-            </router-link>
-          </div>
-          <div class="nav-item next" v-if="nextArticle">
-            <router-link :to="{ name: 'ArticleDetail', params: { id: nextArticle.id } }">
-              <span class="nav-label">下一篇</span>
-              <span class="nav-title">{{ nextArticle.title }}</span>
-            </router-link>
-          </div>
-        </div>
       </div>
 
       <!-- 文章不存在 -->
@@ -98,149 +57,19 @@
         </el-button>
       </div>
     </div>
-
-    <!-- 评论区 -->
+    <!-- 导入评论组件 -->
     <div class="comments-section">
-      <div class="comments-container">
-        <h3 class="comments-title">
-          <el-icon><ChatDotRound /></el-icon>
-          评论 ({{ comments.length }})
-        </h3>
-
-        <!-- 评论表单 -->
-        <div class="comment-form" v-if="userStore.isLoggedIn">
-          <el-form :model="commentForm" :rules="commentRules" ref="commentFormRef">
-            <el-form-item prop="content">
-              <el-input
-                type="textarea"
-                :rows="4"
-                v-model="commentForm.content"
-                placeholder="写下你的评论..."
-                resize="none"
-              ></el-input>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="submitComment" :loading="submittingComment">
-                提交评论
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </div>
-        <div v-else class="login-prompt">
-          <el-alert
-            title="请先登录后再评论"
-            type="info"
-            :closable="false"
-            show-icon
-          >
-            <template #default>
-              <router-link to="/login">立即登录</router-link>
-            </template>
-          </el-alert>
-        </div>
-
-        <!-- 评论列表 -->
-        <div class="comments-list">
-          <div
-            v-for="comment in comments"
-            :key="comment.id"
-            class="comment-item"
-          >
-            <div class="comment-avatar">
-                <el-avatar :src="comment.user.avatar" size="large">
-                  {{ comment.user.username[0] }}
-                </el-avatar>
-              </div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-author">{{ comment.user.username }}</span>
-                  <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
-                </div>
-              <div class="comment-body">{{ comment.content }}</div>
-              <div class="comment-actions">
-                <button class="comment-action-btn" @click="replyToComment(comment)">
-                  <el-icon><ChatLineSquare /></el-icon>
-                  回复
-                </button>
-                <button class="comment-action-btn" @click="commentStore.likeComment(comment.id)">
-                  <el-icon><Star /></el-icon>
-                  {{ comment._count.likes }}
-                </button>
-              </div>
-
-              <!-- 回复列表 -->
-              <div class="replies-list" v-if="comment.replies && comment.replies.length > 0">
-                <div
-                  v-for="reply in comment.replies"
-                  :key="reply.id"
-                  class="reply-item"
-                >
-                  <div class="comment-avatar">
-                <el-avatar :src="reply.user.avatar" size="small">
-                  {{ reply.user.username[0] }}
-                </el-avatar>
-              </div>
-              <div class="comment-content">
-                <div class="comment-header">
-                  <span class="comment-author">{{ reply.user.username }}</span>
-                  <span class="comment-date">{{ formatDate(reply.createdAt) }}</span>
-                </div>
-                <div class="comment-body">
-                  {{ reply.content }}
-                </div>
-                    <div class="comment-actions">
-                      <button class="comment-action-btn" @click="replyToComment(reply)">
-                        <el-icon><ChatLineSquare /></el-icon>
-                        回复
-                      </button>
-                      <button class="comment-action-btn" @click="commentStore.likeComment(reply.id)">
-                  <el-icon><Star /></el-icon>
-                  {{ reply._count.likes }}
-                </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 回复表单 -->
-              <div class="reply-form" v-if="replyingTo === comment.id">
-                <el-form :model="replyForm" :rules="commentRules" ref="replyFormRef">
-                  <el-form-item prop="content">
-                    <el-input
-                      type="textarea"
-                      :rows="3"
-                      v-model="replyForm.content"
-                      placeholder="写下你的回复..."
-                      resize="none"
-                    ></el-input>
-                  </el-form-item>
-                  <el-form-item>
-                    <el-button type="primary" @click="submitReply(comment)" :loading="submittingComment">
-                      提交回复
-                    </el-button>
-                    <el-button @click="cancelReply">取消</el-button>
-                  </el-form-item>
-                </el-form>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 加载更多评论 -->
-        <div v-if="showLoadMore" class="load-more">
-          <el-button type="text" @click="loadMoreComments">加载更多评论</el-button>
-        </div>
-      </div>
+      <Comment :article-id="articleId" />
     </div>
-  </div>
+    </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { useArticleStore } from '../stores/article'
-import { useUserStore } from '../stores/user'
-import { useCommentStore } from '../stores/comment'
+import articleApi from '../api/article'
+// import commentApi from '../api/comment'
+import Comment from '../components/common/Comment.vue'
 import { marked } from 'marked'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism.css'
@@ -264,59 +93,34 @@ const markedOptions: any = {
 marked.setOptions(markedOptions)
 
 const route = useRoute()
-const articleStore = useArticleStore()
-const userStore = useUserStore()
-const commentStore = useCommentStore()
 
-// 表单引用
-const commentFormRef = ref()
-const replyFormRef = ref()
+// 状态变量
+const article = ref<any>(null)
+// const comments = ref<any[]>([])
 
-// 评论表单
-const commentForm = ref({
-  content: ''
-})
+// // 表单引用
+// const commentFormRef = ref()
 
-// 回复表单
-const replyForm = ref({
-  content: ''
-})
+// // 评论表单
+// const commentForm = ref({
+//   content: ''
+// })
 
-// 表单规则
-const commentRules = {
-  content: [
-    { required: true, message: '请输入评论内容', trigger: 'blur' },
-    { min: 1, max: 500, message: '评论内容长度在 1 到 500 个字符', trigger: 'blur' }
-  ]
-}
+
 
 // 状态
 const loading = ref(true)
-const submittingComment = ref(false)
-const replyingTo = ref(null)
-const showLoadMore = ref(false)
+// const submittingComment = ref(false)
+// const showLoadMore = ref(false)
 
 // 获取文章ID
 const articleId = computed(() => Number(route.params.id))
-
-// 获取文章数据
-const article = computed(() => articleStore.currentArticle)
-const comments = computed(() => commentStore.currentArticleComments)
-console.log(11111122,comments.value)
 
 // 渲染后的内容
 const renderedContent = computed(() => {
   if (!article.value || !article.value.content) return ''
   return marked(article.value.content)
 })
-
-// 上一篇/下一篇
-interface ArticleNav {
-  id?: number
-  title?: string
-}
-const prevArticle = ref<ArticleNav | null>(null)
-const nextArticle = ref<ArticleNav | null>(null)
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -333,12 +137,14 @@ const loadArticleDetail = async () => {
 
   loading.value = true
   try {
-    await articleStore.getArticleDetail(articleId.value)
-    // 加载评论
-    await commentStore.getComments(articleId.value)
-    // 增加阅读量
-    // await articleStore.incrementViewCount(articleId.value)
-    
+    // 直接调用API获取文章详情
+    const articleResponse = await articleApi.getArticleDetail(articleId.value)
+    article.value = articleResponse.data
+    console.log(123,article.value)
+    // 直接调用API获取评论
+    // const commentsResponse = await commentApi.getComments(articleId.value)
+    // comments.value = commentsResponse.data.comments
+    // console.log(123,comments.value[0].id)
   } catch (error) {
     console.error('加载文章详情失败:', error)
   } finally {
@@ -347,73 +153,31 @@ const loadArticleDetail = async () => {
 }
 
 // 提交评论
-const submitComment = async () => {
-  if (!commentFormRef.value) return
+// const submitComment = async () => {
+//   if (!commentFormRef.value) return
 
-  await commentFormRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      submittingComment.value = true
-      try {
-        await commentStore.postComment(articleId.value, commentForm.value.content)
-        // 更新文章评论数
-        articleStore.incrementCommentCount(articleId.value)
-        // 清空表单
-        commentForm.value.content = ''
-      } catch (error) {
-        console.error('提交评论失败:', error)
-      } finally {
-        submittingComment.value = false
-      }
-    }
-  })
-}
+//   await commentFormRef.value.validate(async (valid: boolean) => {
+//     if (valid) {
+//       submittingComment.value = true
+//       try {
+//         await commentApi.addComment(articleId.value, commentForm.value.content)
+//         // 清空表单
+//         commentForm.value.content = ''
+//       } catch (error) {
+//         console.error('提交评论失败:', error)
+//       } finally {
+//         submittingComment.value = false
+//       }
+//     }
+//   })
+// }
 
-// 回复评论
-const replyToComment = (comment: any) => {
-  replyingTo.value = comment.id
-  nextTick(() => {
-      const textarea = document.querySelector('.reply-form textarea') as HTMLTextAreaElement
-      if (textarea) {
-        textarea.focus()
-      }
-    })
-}
 
-// 提交回复
-const submitReply = async (comment: any) => {
-  if (!replyFormRef.value) return
-
-  await replyFormRef.value.validate(async (valid: boolean) => {
-    if (valid) {
-      submittingComment.value = true
-      try {
-        await commentStore.postComment(articleId.value, replyForm.value.content, comment.id)
-        // 更新文章评论数
-        articleStore.incrementCommentCount(articleId.value)
-        // 清空表单
-        replyForm.value.content = ''
-        // 隐藏回复表单
-        replyingTo.value = null
-      } catch (error) {
-        console.error('提交回复失败:', error)
-      } finally {
-        submittingComment.value = false
-      }
-    }
-  })
-}
-
-// 取消回复
-const cancelReply = () => {
-  replyingTo.value = null
-  replyForm.value.content = ''
-}
-
-// 加载更多评论
-const loadMoreComments = () => {
-  // 实际项目中这里应该加载更多评论
-  showLoadMore.value = false
-}
+// // 加载更多评论
+// const loadMoreComments = () => {
+//   // 实际项目中这里应该加载更多评论
+//   showLoadMore.value = false
+// }
 
 // 监听路由变化
 watch(() => route.params.id, () => {

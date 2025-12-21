@@ -150,7 +150,6 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useUIStore } from '../../stores/ui'
-import { Collection, InfoFilled, Search, Menu, Document, User, SwitchButton, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -304,7 +303,7 @@ watch(() => route.path, () => {
 
 .header-right {
   display: flex;
-  align-items: right;
+  align-items: center;
   gap: 10px;
   position: relative;
 }
@@ -347,7 +346,7 @@ watch(() => route.path, () => {
 
 .user-menu {
   display: flex;
-  align-items: right;
+  align-items: center;
   gap: 10px;
 }
 

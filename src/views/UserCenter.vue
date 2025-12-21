@@ -219,7 +219,7 @@
         />
       </el-form-item>
 
-      <el-form-item label="分类">
+      <!-- <el-form-item label="分类">
         <el-select
           v-model="articleForm.categoryId"
           placeholder="请选择分类"
@@ -248,7 +248,7 @@
             :value="tag.id"
           />
         </el-select>
-      </el-form-item>
+      </el-form-item> -->
 
       <el-form-item label="状态" prop="status">
         <el-select v-model="articleForm.status" placeholder="请选择状态" style="width: 100%">
@@ -258,7 +258,7 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="封面图">
+      <!-- <el-form-item label="封面图">
         <el-upload
           class="image-uploader"
           action="#"
@@ -271,7 +271,7 @@
           </el-button>
         </el-upload>
         <img v-if="articleForm.coverImage" :src="articleForm.coverImage" class="cover-preview" />
-      </el-form-item>
+      </el-form-item> -->
     </el-form>
 
     <template #footer>
@@ -442,24 +442,24 @@ const articleRules = {
 }
 
 // 分类和标签数据
-import type { Category, Tag } from '../api/article'
-const categories = ref<Category[]>([])
-const tags = ref<Tag[]>([])
+// import type { Category, Tag } from '../api/article'
+// const categories = ref<Category[]>([])
+// const tags = ref<Tag[]>([])
 
 // 加载分类和标签
-const loadCategoriesAndTags = async () => {
-  try {
-    const [categoriesResponse, tagsResponse] = await Promise.all([
-      articleApi.getCategories(),
-      articleApi.getTags()
-    ])
-    categories.value = categoriesResponse.data
-    tags.value = tagsResponse.data
-  } catch (error) {
-    console.error('获取分类和标签失败:', error)
-    ElMessage.error('获取分类和标签失败，请稍后重试')
-  }
-}
+// const loadCategoriesAndTags = async () => {
+//   try {
+//     const [categoriesResponse, tagsResponse] = await Promise.all([
+//       articleApi.getCategories(),
+//       articleApi.getTags()
+//     ])
+//     categories.value = categoriesResponse.data
+//     tags.value = tagsResponse.data
+//   } catch (error) {
+//     console.error('获取分类和标签失败:', error)
+//     ElMessage.error('获取分类和标签失败，请稍后重试')
+//   }
+// }
 
 // 提交文章表单
 const submitArticleForm = async () => {
@@ -517,9 +517,9 @@ const beforeCoverUpload = (file: any) => {
 // 编辑文章
 const editArticle = async (article: Article) => {
   // 如果还没有加载分类和标签，先加载
-  if (categories.value.length === 0) {
-    await loadCategoriesAndTags()
-  }
+  // if (categories.value.length === 0) {
+  //   await loadCategoriesAndTags()
+  // }
   
   // 填充表单数据，将status转换为大写，提取tags的ID
   Object.assign(articleForm, {
@@ -729,7 +729,7 @@ const handleMenuSelect = (index: string) => {
   activeTab.value = index
   if (index === 'articles') {
     loadUserArticles()
-    loadCategoriesAndTags()
+    // loadCategoriesAndTags()
   } else if (index === 'comments') {
     loadUserComments()
   }
@@ -748,19 +748,19 @@ onMounted(() => {
   }
   
   // 根据当前激活的标签页加载相应数据
-  if (activeTab.value === 'articles') {
-    loadUserArticles()
-    loadCategoriesAndTags()
-  } else if (activeTab.value === 'comments') {
-    loadUserComments()
-  }
+  // if (activeTab.value === 'articles') {
+  //   loadUserArticles()
+  //   loadCategoriesAndTags()
+  // } else if (activeTab.value === 'comments') {
+  //   loadUserComments()
+  // }
 })
 
 // 监听创建文章按钮点击，确保打开模态框前加载分类和标签数据
 const handleCreateArticle = async () => {
-  if (categories.value.length === 0) {
-    await loadCategoriesAndTags()
-  }
+  // if (categories.value.length === 0) {
+  //   await loadCategoriesAndTags()
+  // }
   showArticleModal.value = true
 }
 </script>

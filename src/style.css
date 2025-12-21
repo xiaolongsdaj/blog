@@ -41,7 +41,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow-x: hidden;
-  overflow-y: hidden;
+  overflow-y: auto;
 }
 
 /* 链接样式 */
@@ -179,10 +179,10 @@ button:focus-visible {
   }
 }
 
-/* 隐藏所有滚动条 */
+/* 自定义滚动条样式 */
 ::-webkit-scrollbar {
-  width: 0;
-  height: 0;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -190,11 +190,32 @@ button:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
 }
 
-/* 针对Firefox的滚动条隐藏 */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* 针对Firefox的滚动条样式 */
 * {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  -ms-overflow-style: auto;
+}
+
+/* 暗黑模式下的滚动条样式 */
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  * {
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
 }

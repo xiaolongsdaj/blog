@@ -27,16 +27,16 @@
           <ul>
             <li>
               <el-icon><ChatDotRound /></el-icon>
-              <span>email@example.com</span>
+              <span>875634304@qq.com</span>
             </li>
             <li>
               <el-icon><Link /></el-icon>
-              <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://github.com/xiaolongsdaj" target="_blank" rel="noopener noreferrer">GitHub</a>
             </li>
-            <li>
+            <!-- <li>
               <el-icon><Link /></el-icon>
-              <a href="#" target="_blank" rel="noopener noreferrer">LinkedIn</a>
-            </li>
+              <a href="https://www.linkedin.com/in/yourprofile" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            </li> -->
           </ul>
         </div>
       </div>
