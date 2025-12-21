@@ -119,6 +119,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article'
+import articleApi from '../api/article'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,7 +160,10 @@ const loadSearchResults = async () => {
 
   loading.value = true
   try {
-    await articleStore.searchArticles(currentKeyword.value, currentPage.value)
+    // await articleStore.searchArticles(currentKeyword.value)
+    const articleResponse = await articleApi.searchArticles(currentKeyword.value)
+    console.log(11111, articleResponse.data)
+    return articleResponse.data
   } catch (error) {
     console.error('搜索失败:', error)
   } finally {

@@ -67,6 +67,12 @@ const articleApi = {
     return apiClient.get('/api/articles', { params })
   },
 
+  // 搜索文章
+  searchArticles: async (keyword: string, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    const params = { page, limit, keyword: keyword };
+    return apiClient.get('/api/articles', { params });
+  },
+
   // 获取文章详情
   getArticleDetail: async (id: number): Promise<ApiResponse<Article>> => {
     return apiClient.get(`/api/articles/${id}`)

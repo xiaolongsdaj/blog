@@ -17,7 +17,7 @@
       <!-- 桌面端导航菜单 -->
       <nav class="nav-menu">
         <router-link to="/" class="nav-item" :class="{ active: currentRoute === '/' }">
-          <el-icon><Home /></el-icon>
+          <el-icon><House /></el-icon>
           <span>首页</span>
         </router-link>
         <router-link to="/category" class="nav-item" :class="{ active: currentRoute.includes('/category') }">
@@ -25,7 +25,7 @@
           <span>分类</span>
         </router-link>
         <router-link to="/tag" class="nav-item" :class="{ active: currentRoute.includes('/tag') }">
-          <el-icon><Label /></el-icon>
+          <el-icon><Box /></el-icon>
           <span>标签</span>
         </router-link>
         <router-link to="/about" class="nav-item" :class="{ active: currentRoute === '/about' }">
@@ -35,13 +35,9 @@
       </nav>
       
       <div class="header-right">
+
         <!-- 搜索按钮 -->
-        <button class="search-btn" @click="toggleSearch">
-          <el-icon><Search /></el-icon>
-        </button>
-        
-        <!-- 搜索框 -->
-        <div class="search-box" :class="{ visible: searchVisible }">
+        <button class="search-btn" >
           <el-input
             v-model="searchKeyword"
             placeholder="搜索文章..."
@@ -53,7 +49,7 @@
               <el-button @click="handleSearch"><el-icon><Search /></el-icon></el-button>
             </template>
           </el-input>
-        </div>
+        </button>
         
         <!-- 用户菜单 -->
         <div class="user-menu">
@@ -98,7 +94,7 @@
       <div class="mobile-nav-content">
         <nav class="mobile-nav-menu">
           <router-link to="/" class="mobile-nav-item" @click="hideMobileMenu">
-            <el-icon><Home /></el-icon>
+            <el-icon><House /></el-icon>
             <span>首页</span>
           </router-link>
           <router-link to="/category" class="mobile-nav-item" @click="hideMobileMenu">
@@ -106,7 +102,7 @@
             <span>分类</span>
           </router-link>
           <router-link to="/tag" class="mobile-nav-item" @click="hideMobileMenu">
-            <el-icon><Label /></el-icon>
+            <el-icon><Box /></el-icon>
             <span>标签</span>
           </router-link>
           <router-link to="/about" class="mobile-nav-item" @click="hideMobileMenu">
@@ -150,6 +146,17 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useUIStore } from '../../stores/ui'
+// import { 
+//   Menu, 
+//   Document, 
+//   House,
+//   Collection, 
+//   InfoFilled, 
+//   Search, 
+//   User, 
+//   SwitchButton, 
+//   UserFilled 
+// } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
