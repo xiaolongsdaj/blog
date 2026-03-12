@@ -10,6 +10,7 @@ const Search = () => import('../views/Search.vue')
 const Login = () => import('../views/Login.vue')
 const Register = () => import('../views/Register.vue')
 const UserCenter = () => import('../views/UserCenter.vue')
+const About = () => import('../views/About.vue')
 
 const routes: Array<RouteRecordRaw> = [
   { path: '/', name: 'Home', component: Home },
@@ -21,12 +22,13 @@ const routes: Array<RouteRecordRaw> = [
   { path: '/search', name: 'Search', component: Search, props: route => ({ keyword: route.query.keyword }) },
   { path: '/login', name: 'Login', component: Login },
   { path: '/register', name: 'Register', component: Register },
-  { 
+  {
     path: '/user', 
     name: 'UserCenter', 
     component: UserCenter,
     meta: { requiresAuth: true } // 需要登录
   },
+  { path: '/about', name: 'About', component: About },
   { path: '/:pathMatch(.*)*', redirect: '/' } // 404路由
 ]
 

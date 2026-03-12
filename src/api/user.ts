@@ -11,6 +11,7 @@ export interface User {
   updatedAt: string
   role: string
   isActive: boolean
+  lastLogin: string
 }
 
 // 登录请求类型
@@ -57,13 +58,18 @@ const userApi = {
     return apiClient.post('/api/auth/register', data)
   },
 
-  // 获取当前用户信息
-  getCurrentUser: async (id: number): Promise<User> => {
+  // 获取当前用户信息（根据token）
+  getCurrentUser: async (): Promise<ApiResponse<User>> => {
+    return apiClient.get('api/users/profile')
+  },
+
+  // 根据ID获取用户信息
+  getUserById: async (id: number): Promise<ApiResponse<User>> => {
     return apiClient.get(`/api/users/${id}`)
   },
 
   // 更新用户信息
-  updateUser: async (data: Partial<User>): Promise<User> => {
+  updateUser: async (data: Partial<User>): Promise<ApiResponse<User>> => {
     return apiClient.put('/api/users/profile', data)
   },
 

@@ -63,40 +63,80 @@ export const useArticleStore = defineStore('article', {
     },
 
     // 获取分类列表
-    // async getCategories() {
-    //   try {
-    //     const response = await articleApi.getCategories()
-    //     this.categories = response.data
-    //     return response.data
-    //   } catch (error) {
-    //     console.error('获取分类列表失败:', error)
-    //     return []
-    //   }
-    // },
+    async getCategories() {
+      try {
+        const response = await articleApi.getCategories()
+        this.categories = response.data
+        return response.data
+      } catch (error) {
+        console.error('获取分类列表失败:', error)
+        return []
+      }
+    },
 
     // 获取标签列表
-    // async getTags() {
-    //   try {
-    //     const response = await articleApi.getTags()
-    //     this.tags = response.data
-    //     return response.data
-    //   } catch (error) {
-    //     console.error('获取标签列表失败:', error)
-    //     return []
-    //   }
-    // },
+    async getTags() {
+      try {
+        const response = await articleApi.getTags()
+        this.tags = response.data
+        return response.data
+      } catch (error) {
+        console.error('获取标签列表失败:', error)
+        return []
+      }
+    },
 
     // 获取分类下的文章
-    // async getArticlesByCategory(categoryId: number, page: number = 1) {
-    //   this.currentCategory = this.categories.find(c => c.id === categoryId) || null
-    //   return this.getArticles(page, 10, categoryId)
-    // },
+    async getArticlesByCategory(categoryId: number, page: number = 1) {
+      // 确保分类列表已加载
+      if (this.categories.length === 0) {
+        await this.getCategories()
+      }
+      
+      this.currentCategory = this.categories.find(c => c.id === categoryId) || null
+      const categoryName = this.currentCategory?.name || ''
+      console.log('分类ID:', categoryId, '分类名称:', categoryName)
+      
+      this.loading = true
+      try {
+        const response = await articleApi.getArticlesByCategory(categoryName, page, 10)
+        this.articles = response.data.articles
+        this.page = page
+        this.total = response.data.pagination.total
+        return response.data
+      } catch (error) {
+        console.error('获取分类文章失败:', error)
+        return { articles: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } }
+      } finally {
+        this.loading = false
+      }
+    },
 
     // 获取标签下的文章
-    // async getArticlesByTag(tagId: number, page: number = 1) {
-    //   this.currentTag = this.tags.find(t => t.id === tagId) || null
-    //   return this.getArticles(page, 10, undefined, tagId)
-    // },
+    async getArticlesByTag(tagId: number, page: number = 1) {
+      // 确保标签列表已加载
+      if (this.tags.length === 0) {
+        await this.getTags()
+      }
+      
+      this.currentTag = this.tags.find(t => t.id === tagId) || null
+      const tagName = this.currentTag?.name || ''
+      console.log('标签ID:', tagId, '标签名称:', tagName)
+      
+      this.loading = true
+      try {
+        const response = await articleApi.getArticlesByTag(tagName, page, 10)
+        this.articles = response.data.articles
+        this.page = page
+        this.total = response.data.pagination.total
+        return response.data
+      } catch (error) {
+        console.error('获取标签文章失败:', error)
+        return { articles: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 1 } }
+      } finally {
+        this.loading = false
+      }
+    },
 
     // // 搜索文章
     // async searchArticles(keyword: string, page: number = 1) {

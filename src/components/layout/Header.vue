@@ -51,6 +51,11 @@
           </el-input>
         </button>
         
+        <!-- 星盘时钟按钮 -->
+        <!-- <button class="astrolabe-btn" @click="handleAstrolabe">
+          <el-icon><Star /></el-icon>
+        </button> -->
+        
         <!-- 用户菜单 -->
         <div class="user-menu">
           <template v-if="userStore.isLoggedIn">
@@ -109,6 +114,9 @@
             <el-icon><InfoFilled /></el-icon>
             <span>关于</span>
           </router-link>
+          <!-- <div class="mobile-nav-item" @click="handleAstrolabe">
+            <el-icon><Star /></el-icon>
+          </div> -->
         </nav>
         
         <div class="mobile-user-menu">
@@ -136,8 +144,13 @@
       </div>
     </div>
     
+    <!-- 星盘时钟全屏容器 -->
+    <!-- <div v-if="astrolabeVisible" class="astrolabe-fullscreen" ref="astrolabeContainer">
+      <Wallpaper />
+    </div> -->
+    
     <!-- 遮罩层 -->
-    <div class="overlay" v-if="mobileMenuVisible || searchVisible" @click="closeOverlay"></div>
+    <!-- <div class="overlay" v-if="mobileMenuVisible || searchVisible" @click="closeOverlay"></div> -->
   </header>
 </template>
 
@@ -146,17 +159,18 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../../stores/user'
 import { useUIStore } from '../../stores/ui'
-// import { 
-//   Menu, 
-//   Document, 
-//   House,
-//   Collection, 
-//   InfoFilled, 
-//   Search, 
-//   User, 
-//   SwitchButton, 
-//   UserFilled 
-// } from '@element-plus/icons-vue'
+// import Wallpaper from '../common/Wallpaper.vue'
+import { 
+  Menu, 
+  Document, 
+  House,
+  Collection, 
+  InfoFilled, 
+  Search, 
+  User, 
+  SwitchButton, 
+  UserFilled,
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -166,20 +180,42 @@ const uiStore = useUIStore()
 const searchKeyword = ref('')
 const currentRoute = computed(() => route.path)
 const mobileMenuVisible = computed(() => uiStore.mobileMenuVisible)
-const searchVisible = computed(() => uiStore.searchVisible)
+// const searchVisible = computed(() => uiStore.searchVisible)
+// const astrolabeVisible = ref(false)
+// const astrolabeContainer = ref<HTMLElement | null>(null)
 
 // 页面加载时，如果有token但没有用户信息，自动获取用户信息
 onMounted(() => {
   if (userStore.isLoggedIn && !userStore.userInfo) {
     userStore.getUserInfo()
-    console.log('用户信息:', userStore.userInfo)
   }
+  // 添加事件监听
+  // document.addEventListener('keydown', handleKeydown)
+  // document.addEventListener('fullscreenchange', handleFullscreenChange)
+  // document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+  // document.addEventListener('msfullscreenchange', handleFullscreenChange)
 })
 
-// 切换搜索框显示
-const toggleSearch = () => {
-  uiStore.toggleSearch()
-}
+// onUnmounted(() => {
+//   // 移除事件监听
+//   document.removeEventListener('keydown', handleKeydown)
+//   document.removeEventListener('fullscreenchange', handleFullscreenChange)
+//   document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+//   document.removeEventListener('msfullscreenchange', handleFullscreenChange)
+//   // 退出全屏
+//   if (astrolabeVisible.value) {
+//     exitFullscreen()
+//   }
+// })
+
+// 监听用户信息变化
+watch(
+  () => userStore.userInfo,
+  (newInfo) => {
+    console.log('Header组件 - 用户信息已更新:', newInfo)
+  },
+  { deep: true }
+)
 
 // 切换移动端菜单显示
 const toggleMobileMenu = () => {
@@ -196,12 +232,12 @@ const handleSearch = () => {
   if (searchKeyword.value.trim()) {
     // 添加到搜索历史
     uiStore.addSearchHistory(searchKeyword.value)
-    // 跳转到搜索页面
-    router.push({ name: 'Search', query: { keyword: searchKeyword.value } })
     // 隐藏搜索框
     uiStore.hideSearch()
     // 清空搜索关键词
     searchKeyword.value = ''
+    // 跳转到搜索页面，使用search作为查询参数
+    router.push({ name: 'Search', query: { search: searchKeyword.value } })
   }
 }
 
@@ -212,17 +248,62 @@ const handleLogout = () => {
   router.push('/')
 }
 
-// 关闭遮罩层
-const closeOverlay = () => {
-  uiStore.hideMobileMenu()
-  uiStore.hideSearch()
-}
+// 进入全屏
+// const enterFullscreen = (element: HTMLElement) => {
+//   if (element.requestFullscreen) {
+//     element.requestFullscreen()
+//   } else if (element.webkitRequestFullscreen) {
+//     element.webkitRequestFullscreen()
+//   } else if (element.msRequestFullscreen) {
+//     element.msRequestFullscreen()
+//   }
+// }
 
-// 监听路由变化，隐藏搜索框和移动端菜单
-watch(() => route.path, () => {
-  uiStore.hideSearch()
-  uiStore.hideMobileMenu()
-})
+// 退出全屏
+// const exitFullscreen = () => {
+//   if (document.exitFullscreen) {
+//     document.exitFullscreen()
+//   } else if (document.webkitExitFullscreen) {
+//     document.webkitExitFullscreen()
+//   } else if (document.msExitFullscreen) {
+//     document.msExitFullscreen()
+//   }
+// }
+
+// 处理星盘时钟
+// const handleAstrolabe = () => {
+//   hideMobileMenu()
+//   astrolabeVisible.value = true
+//   // 延迟一下，确保DOM已经渲染
+//   setTimeout(() => {
+//     if (astrolabeContainer.value) {
+//       enterFullscreen(astrolabeContainer.value)
+//     }
+//   }, 100)
+// }
+
+// 监听ESC键
+// const handleKeydown = (event: KeyboardEvent) => {
+//   if (event.key === 'Escape' && astrolabeVisible.value) {
+//     astrolabeVisible.value = false
+//     exitFullscreen()
+//   }
+// }
+
+// 监听全屏变化
+// const handleFullscreenChange = () => {
+//   if (!document.fullscreenElement && astrolabeVisible.value) {
+//     astrolabeVisible.value = false
+//   }
+// }
+
+// 关闭遮罩层
+// const closeOverlay = () => {
+//   uiStore.hideMobileMenu()
+//   uiStore.hideSearch()
+// }
+
+
 </script>
 
 <style scoped lang="scss">
@@ -328,6 +409,30 @@ watch(() => route.path, () => {
   &:hover {
     background-color: #f5f7fa;
     color: #409eff;
+  }
+}
+
+.astrolabe-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #ecf5ff;
+  border: 1px solid #d9ecff;
+  border-radius: 4px;
+  color: #409eff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background-color: #d9ecff;
+    border-color: #409eff;
+  }
+
+  @media (max-width: 768px) {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
 
@@ -443,5 +548,33 @@ watch(() => route.path, () => {
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 150;
+}
+
+/* 星盘时钟全屏容器 */
+.astrolabe-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  background-color: #0a0a2a;
+  overflow: hidden;
+}
+
+/* 全屏状态下的样式 */
+:fullscreen .astrolabe-fullscreen {
+  width: 100%;
+  height: 100%;
+}
+
+:-webkit-full-screen .astrolabe-fullscreen {
+  width: 100%;
+  height: 100%;
+}
+
+:-ms-fullscreen .astrolabe-fullscreen {
+  width: 100%;
+  height: 100%;
 }
 </style>

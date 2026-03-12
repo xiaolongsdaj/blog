@@ -23,7 +23,7 @@
       <div class="search-info">
         <h2 class="search-title">
           搜索结果
-          <span class="keyword">"{{ currentKeyword }}"</span>
+          <span class="keyword">"{{ currentSearch }}"</span>
         </h2>
         <p class="search-stats">
           共找到 {{ articles.length }} 篇相关文章
@@ -85,17 +85,7 @@
         <!-- 无结果提示 -->
         <div v-else class="no-results">
           <el-empty description="未找到相关文章" />
-          <div class="search-tips">
-            <h3>搜索建议：</h3>
-            <ul>
-              <li>尝试使用其他关键词</li>
-              <li>检查拼写是否正确</li>
-              <li>使用更通用的词语</li>
-            </ul>
-            <el-button type="primary" @click="$router.push('/')" style="margin-top: 20px;">
-              返回首页
-            </el-button>
-          </div>
+          
         </div>
       </div>
 
@@ -118,12 +108,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useArticleStore } from '../stores/article'
 import articleApi from '../api/article'
+import type { Article } from '../api/article'
 
 const route = useRoute()
 const router = useRouter()
-const articleStore = useArticleStore()
 
 // 状态
 const loading = ref(false)
@@ -131,15 +120,15 @@ const searchKeyword = ref('')
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+// 搜索结果数据
+const articles = ref<Article[]>([])
+const total = ref(0)
+
 // 防抖定时器
 let debounceTimer: number | null = null
 
 // 获取当前搜索关键词
-const currentKeyword = computed(() => route.query.keyword as string || '')
-
-// 获取文章数据
-const articles = computed(() => articleStore.articles)
-const total = computed(() => articleStore.total)
+const currentSearch = computed(() => route.query.search as string || '')
 
 // 格式化日期
 const formatDate = (dateString: string) => {
@@ -149,20 +138,25 @@ const formatDate = (dateString: string) => {
 
 // 高亮关键词
 const highlightKeyword = (text: string) => {
-  if (!currentKeyword.value) return text
-  const regex = new RegExp(`(${currentKeyword.value})`, 'gi')
+  if (!currentSearch.value) return text
+  const regex = new RegExp(`(${currentSearch.value})`, 'gi')
   return text.replace(regex, '<span class="highlight">$1</span>')
 }
 
 // 加载搜索结果
 const loadSearchResults = async () => {
-  if (!currentKeyword.value) return
+  if (!currentSearch.value) return
 
   loading.value = true
   try {
-    // await articleStore.searchArticles(currentKeyword.value)
-    const articleResponse = await articleApi.searchArticles(currentKeyword.value)
+    // await articleStore.searchArticles(currentSearch.value)
+    const articleResponse = await articleApi.searchArticles(currentSearch.value, currentPage.value, pageSize.value)
     console.log(11111, articleResponse.data)
+    
+    // 直接使用搜索结果，不依赖articleStore
+    articles.value = articleResponse.data.articles
+    total.value = articleResponse.data.pagination.total
+    
     return articleResponse.data
   } catch (error) {
     console.error('搜索失败:', error)
@@ -177,7 +171,7 @@ const handleSearch = () => {
   
   router.push({
     path: '/search',
-    query: { keyword: searchKeyword.value.trim() }
+    query: { search: searchKeyword.value.trim() }
   })
 }
 
@@ -205,15 +199,15 @@ const handleCurrentChange = (page: number) => {
 }
 
 // 监听路由变化
-watch(() => route.query.keyword, (newKeyword) => {
-  searchKeyword.value = newKeyword as string || ''
+watch(() => route.query.search, (newSearch) => {
+  searchKeyword.value = newSearch as string || ''
   currentPage.value = 1
   loadSearchResults()
 })
 
 // 初始化
 onMounted(() => {
-  searchKeyword.value = currentKeyword.value
+  searchKeyword.value = currentSearch.value
   loadSearchResults()
 })
 </script>

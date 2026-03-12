@@ -1,6 +1,4 @@
 import { defineStore } from 'pinia'
-// 导入依赖的store
-import { useArticleStore } from './article'
 // 导入API服务和类型
 import commentApi, { type Comment } from '../api/comment'
 
@@ -69,11 +67,6 @@ export const useCommentStore = defineStore('comment', {
           // 发表新评论
           this.currentArticleComments.unshift(newComment)
         }
-
-        // 更新文章评论数
-        const articleStore = useArticleStore()
-        articleStore.incrementCommentCount(articleId)
-
         return true
       } catch (error) {
         console.error('发表评论失败:', error)

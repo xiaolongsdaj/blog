@@ -59,12 +59,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '../stores/user'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-// const route = useRoute() // 暂时注释，未使用
+const route = useRoute()
 const userStore = useUserStore()
 
 // 表单引用
@@ -114,9 +114,9 @@ const handleLogin = async () => {
               
               if (loginSuccess) {
                 ElMessage.success('登录成功')
-                // // 获取跳转地址，如果没有则跳转到首页
-                // const redirect = route.query.redirect as string || '/'
-                router.push('/')
+                // 获取跳转地址，如果没有则跳转到首页
+                const redirect = route.query.redirect as string || '/'
+                router.push(redirect)
               } else {
                 ElMessage.error('登录失败，请检查用户名和密码是否正确')
               }

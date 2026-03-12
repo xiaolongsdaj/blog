@@ -36,7 +36,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useCommentStore } from '../../stores/comment'
 import type { Comment } from '../../api/comment'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -49,7 +48,6 @@ const emit = defineEmits<{
   refresh: []
 }>()
 
-const router = useRouter()
 const commentStore = useCommentStore()
 
 // 评论列表数据

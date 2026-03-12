@@ -40,9 +40,10 @@ apiClient.interceptors.response.use(
         // 清除本地存储的token信息
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
-        localStorage.removeItem('userInfo')
-        // 跳转到登录页面
-        window.location.href = '/login'
+        localStorage.removeItem('user')
+        // 跳转到登录页面，携带当前路径作为redirect参数
+        const currentPath = window.location.pathname + window.location.search
+        window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`
       }
     } else if (error.request) {
       // 请求已发出，但没有收到响应

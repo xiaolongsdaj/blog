@@ -39,14 +39,21 @@
 
           <!-- 文章标签 -->
           <div v-if="article.tags && article.tags.length > 0" class="article-tags">
-            <el-tag
-              v-for="tag in article.tags"
-              :key="tag.id"
-              size="small"
-              :to="`/tag/${tag.id}`"
-            >
-              {{ tag.name }}
-            </el-tag>
+            <template v-for="(tagItem, itemIndex) in article.tags" :key="tagItem.id || itemIndex">
+              <template v-if="tagItem.name">
+                <span 
+                  v-for="(tag, index) in tagItem.name.split(/[,，]/).map(t => t.trim()).filter(Boolean)" 
+                  :key="index" 
+                  class="tag-item" 
+                  :style="{ backgroundColor: getTagColor(itemIndex * 10 + index) }"
+                >
+                  {{ tag }}
+                </span>
+              </template>
+              <span v-else class="tag-item" :style="{ backgroundColor: getTagColor(itemIndex) }">
+                {{ tagItem.name || tagItem }}
+              </span>
+            </template>
           </div>
 
           <!-- 文章元数据 -->
@@ -142,6 +149,21 @@ const formatDate = (dateString: string) => {
     month: '2-digit',
     day: '2-digit'
   })
+}
+
+// 获取标签颜色
+const getTagColor = (index: number) => {
+  const colors = [
+    '#f56c6c', // 红色
+    '#67c23a', // 绿色
+    '#e6a23c', // 橙色
+    '#409eff', // 蓝色
+    '#909399', // 灰色
+    '#722ed1', // 紫色
+    '#13c2c2', // 青色
+    '#faad14'  // 黄色
+  ]
+  return colors[index % colors.length]
 }
 
 // 处理页码变化
@@ -293,36 +315,37 @@ const handleSizeChange = (size: number) => {
   .article-tags {
     margin-bottom: 16px;
 
-    .el-tag {
+    .tag-item {
+      display: inline-block;
+      padding: 4px 12px;
       margin-right: 8px;
-      margin-bottom: 8px;
+      color: white;
+      border-radius: 12px;
+      font-size: 0.85rem;
       cursor: pointer;
       transition: all 0.3s ease;
 
       &:hover {
-        background-color: #ecf5ff;
-        color: #409eff;
-        border-color: #409eff;
+        opacity: 0.8;
+        transform: translateY(-2px);
       }
     }
 
     @media (max-width: 768px) {
       margin-bottom: 12px;
 
-      .el-tag {
+      .tag-item {
         margin-right: 6px;
-        margin-bottom: 6px;
         font-size: 0.8rem;
-        padding: 0 8px;
+        padding: 3px 10px;
       }
     }
 
     @media (max-width: 480px) {
-      .el-tag {
+      .tag-item {
         margin-right: 4px;
-        margin-bottom: 4px;
         font-size: 0.75rem;
-        padding: 0 6px;
+        padding: 2px 8px;
       }
     }
   }

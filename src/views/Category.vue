@@ -8,6 +8,21 @@
           {{ categoryName }}
         </h1>
         <p class="page-description">共有 {{ articles.length }} 篇文章</p>
+        
+        <!-- 分类标签栏 -->
+        <div class="category-tabs" v-if="limitedCategories.length > 0">
+          <el-tag
+            v-for="category in limitedCategories"
+            :key="category.id"
+            :type="category.id === categoryId ? 'primary' : ''"
+            :effect="category.id === categoryId ? 'dark' : 'plain'"
+            class="category-tag"
+            @click="switchCategory(category.id)"
+          >
+            {{ category.name }}
+            
+          </el-tag>
+        </div>
       </div>
 
       <!-- 文章列表 -->
@@ -16,48 +31,18 @@
           <el-skeleton :rows="5" animated />
         </div>
 
-        <div v-else-if="articles.length > 0">
-          <div 
-            v-for="article in articles" 
-            :key="article.id"
-            class="article-item"
-          >
-            <div class="article-info">
-              <h3 class="article-title">
-                <router-link :to="{ name: 'ArticleDetail', params: { id: article.id } }">
-                  {{ article.title }}
-                </router-link>
-              </h3>
-              <p class="article-excerpt">{{ article.summary }}</p>
-              <div class="article-meta">
-                <span class="date">
-                  <el-icon><Calendar /></el-icon>
-                  {{ formatDate(article.createdAt) }}
-                </span>
-                <span class="category">
-                  <el-icon><Collection /></el-icon>
-                  <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
-                    {{ article.category.name }}
-                  </router-link>
-                  <span v-else>无分类</span>
-                </span>
-                <span class="views">
-                  <el-icon><View /></el-icon>
-                  {{ article.viewCount }}
-                </span>
-                <span class="comments">
-                  <el-icon><ChatDotRound /></el-icon>
-                  {{ article.commentCount }}
-                </span>
-              </div>
-            </div>
-            <div v-if="article.coverImage" class="article-cover">
-              <router-link :to="{ name: 'ArticleDetail', params: { id: article.id } }">
-                <img :src="article.coverImage" :alt="article.title" loading="lazy" />
-              </router-link>
-            </div>
-          </div>
-        </div>
+        <ArticleCard 
+          v-else-if="articles.length > 0"
+          v-for="article in articles" 
+          :key="article.id"
+          :article="{
+            ...article,
+            tags: article.tags.map((tag: { name: string }) => ({
+              id: 0, // 后端未返回 id，可统一补 0 或根据业务调整
+              name: tag.name
+            }))
+          }"
+        />
 
         <!-- 无文章提示 -->
         <div v-else class="no-articles">
@@ -86,14 +71,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article'
+import ArticleCard from '../components/common/ArticleCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const articleStore = useArticleStore()
 
 // 状态
 const loading = ref(true)
+const categoriesLoading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
@@ -104,16 +92,22 @@ const categoryId = computed(() => Number(route.params.id))
 const articles = computed(() => articleStore.articles)
 const total = computed(() => articleStore.total)
 
+// 获取分类列表
+const categories = computed(() => articleStore.categories)
+
+// 限制分类标签数量为前10个
+const limitedCategories = computed(() => categories.value.slice(0, 10))
+
 // 分类名称
 const categoryName = computed(() => {
   const category = articleStore.categories.find(cat => cat.id === categoryId.value)
   return category ? category.name : '分类'
 })
 
-// 格式化日期
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+// 切换分类
+const switchCategory = (id: number) => {
+  if (id === categoryId.value) return
+  router.push({ name: 'CategoryArticles', params: { id } })
 }
 
 // 加载分类文章
@@ -133,6 +127,18 @@ const loadCategoryArticles = async () => {
   }
 }
 
+// 加载分类列表
+const loadCategories = async () => {
+  categoriesLoading.value = true
+  try {
+    await articleStore.getCategories()
+  } catch (error) {
+    console.error('加载分类列表失败:', error)
+  } finally {
+    categoriesLoading.value = false
+  }
+}
+
 // 分页处理
 const handleSizeChange = (size: number) => {
   pageSize.value = size
@@ -146,14 +152,19 @@ const handleCurrentChange = (page: number) => {
 }
 
 // 监听路由变化
-watch(() => route.params.id, () => {
+watch(() => route.params.id, async () => {
   currentPage.value = 1
-  loadCategoryArticles()
+  // 先加载分类列表，确保分类名称能正确获取
+  await loadCategories()
+  await loadCategoryArticles()
 })
 
 // 初始化
-onMounted(() => {
-  loadCategoryArticles()
+onMounted(async () => {
+  // 先加载分类列表
+  await loadCategories()
+  // 再加载分类文章
+  await loadCategoryArticles()
 })
 </script>
 
@@ -191,6 +202,32 @@ onMounted(() => {
   .page-description {
     color: #909399;
     font-size: 1rem;
+    margin-bottom: 20px;
+  }
+
+  .category-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+
+    .category-tag {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      padding: 6px 16px;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      .category-count {
+        margin-left: 5px;
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+    }
   }
 }
 
@@ -202,117 +239,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 30px;
-}
-
-.article-item {
-  display: flex;
-  gap: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 20px;
-  }
-}
-
-.article-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.article-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 15px;
-  line-height: 1.4;
-
-  a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #409eff;
-    }
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-  }
-}
-
-.article-excerpt {
-  color: #606266;
-  line-height: 1.6;
-  margin-bottom: 20px;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.article-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 0.9rem;
-  color: #909399;
-  flex-wrap: wrap;
-
-  span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .el-icon {
-    font-size: 0.9rem;
-  }
-
-  .category a {
-    color: #909399;
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #409eff;
-    }
-  }
-}
-
-.article-cover {
-  flex-shrink: 0;
-  width: 200px;
-  height: 150px;
-  border-radius: 8px;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover img {
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    height: 200px;
-  }
+  margin-bottom: 40px;
 }
 
 .no-articles {

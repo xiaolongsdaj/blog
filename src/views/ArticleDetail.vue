@@ -12,6 +12,31 @@
         <header class="article-header">
           <h1 class="article-title">{{ article.title }}</h1>
           <div class="article-meta">
+            <span class="categories">
+              <el-icon><Collection /></el-icon>
+              <template v-if="article.categories && article.categories.length > 0">
+                <template v-for="(categoryItem, itemIndex) in article.categories" :key="categoryItem.id || itemIndex">
+                  <template v-if="categoryItem.name">
+                    <span 
+                      v-for="(category, index) in categoryItem.name.split(/[,，]/).map((t: string) => t.trim()).filter(Boolean)" 
+                      :key="index" 
+                      class="category-item"
+                    >
+                      {{ category }}
+                    </span>
+                  </template>
+                  <span v-else class="category-item">
+                    {{ categoryItem }}
+                  </span>
+                </template>
+              </template>
+              <template v-else-if="article.category">
+                <span class="category-item">
+                  {{ article.category.name }}
+                </span>
+              </template>
+              <span v-else>无分类</span>
+            </span>
             <span class="date">
               <el-icon><Calendar /></el-icon>
               {{ formatDate(article.createdAt) }}
@@ -25,6 +50,24 @@
               {{ article.commentCount }}
             </span>
           </div>
+          <!-- 文章标签 -->
+          <div v-if="article.tags && article.tags.length > 0" class="article-tags">
+            <template v-for="(tagItem, itemIndex) in article.tags" :key="tagItem.id || itemIndex">
+              <template v-if="tagItem.name">
+                <span 
+                  v-for="(tag, index) in tagItem.name.split(/[,，]/).map((t: string) => t.trim()).filter(Boolean)" 
+                  :key="index" 
+                  class="tag-item" 
+:style="{ backgroundColor: getTagColor(Number(itemIndex) * 10 + Number(index)) }"
+                >
+                  {{ tag }}
+                </span>
+              </template>
+              <span v-else class="tag-item" :style="{ backgroundColor: getTagColor(Number(itemIndex)) }">
+                {{ tagItem }}
+              </span>
+            </template>
+          </div>
         </header>
 
         <!-- 文章正文 -->
@@ -34,17 +77,13 @@
 
         <!-- 文章操作 -->
         <div class="article-actions">
-          <button class="action-btn">
-            <el-icon><Star /></el-icon>
-            <span>点赞</span>
+          <button class="action-btn" @click="handleLike" :class="{ 'active': isLiked }">
+            <el-icon :class="{ 'liked': isLiked }"><StarFilled /></el-icon>
+            <span>{{ article?.likeCount || 0 }}</span>
           </button>
-          <button class="action-btn">
-            <el-icon><Share /></el-icon>
-            <span>分享</span>
-          </button>
-          <button class="action-btn">
-            <el-icon><CopyDocument /></el-icon>
-            <span>复制链接</span>
+          <button class="action-btn" @click="handleFavorite" :class="{ 'active': isFavorited }">
+            <el-icon :class="{ 'favorited': isFavorited }"><CollectionTag /></el-icon>
+            <span>{{ article?.favoriteCount || 0 }}</span>
           </button>
         </div>
       </div>
@@ -106,6 +145,10 @@ const article = ref<any>(null)
 //   content: ''
 // })
 
+// 收藏和点赞状态
+const isFavorited = ref(false)
+const isLiked = ref(false)
+
 
 
 // 状态
@@ -128,6 +171,21 @@ const formatDate = (dateString: string) => {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
+// 获取标签颜色
+const getTagColor = (index: number) => {
+  const colors = [
+    '#f56c6c', // 红色
+    '#67c23a', // 绿色
+    '#e6a23c', // 橙色
+    '#409eff', // 蓝色
+    '#909399', // 灰色
+    '#722ed1', // 紫色
+    '#13c2c2', // 青色
+    '#faad14'  // 黄色
+  ]
+  return colors[index % colors.length]
+}
+
 // 加载文章详情
 const loadArticleDetail = async () => {
   if (isNaN(articleId.value)) {
@@ -141,6 +199,9 @@ const loadArticleDetail = async () => {
     const articleResponse = await articleApi.getArticleDetail(articleId.value)
     article.value = articleResponse.data
     console.log(123,article.value)
+    // 更新点赞和收藏状态
+    isLiked.value = Boolean((articleResponse.data as any).isLiked)
+    isFavorited.value = Boolean((articleResponse.data as any).isFavorited) || false
     // 直接调用API获取评论
     // const commentsResponse = await commentApi.getComments(articleId.value)
     // comments.value = commentsResponse.data.comments
@@ -149,6 +210,56 @@ const loadArticleDetail = async () => {
     console.error('加载文章详情失败:', error)
   } finally {
     loading.value = false
+  }
+}
+
+// 处理点赞
+const handleLike = async () => {
+  if (!articleId.value) return
+  
+  try {
+    if (isLiked.value) {
+      // 取消点赞
+      await articleApi.unlikeArticle(articleId.value)
+      isLiked.value = false
+      if (article.value) {
+        article.value.likeCount = Math.max(0, (article.value.likeCount || 0) - 1)
+      }
+    } else {
+      // 点赞
+      await articleApi.likeArticle(articleId.value)
+      isLiked.value = true
+      if (article.value) {
+        article.value.likeCount = (article.value.likeCount || 0) + 1
+      }
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
+  }
+}
+
+// 处理收藏
+const handleFavorite = async () => {
+  if (!articleId.value) return
+  
+  try {
+    if (isFavorited.value) {
+      // 取消收藏
+      await articleApi.unfavoriteArticle(articleId.value)
+      isFavorited.value = false
+      if (article.value) {
+        article.value.favoriteCount = Math.max(0, (article.value.favoriteCount || 0) - 1)
+      }
+    } else {
+      // 收藏
+      await articleApi.favoriteArticle(articleId.value)
+      isFavorited.value = true
+      if (article.value) {
+        article.value.favoriteCount = (article.value.favoriteCount || 0) + 1
+      }
+    }
+  } catch (error) {
+    console.error('操作失败:', error)
   }
 }
 
@@ -249,8 +360,31 @@ onMounted(() => {
     gap: 5px;
   }
 
+  .categories {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   .el-icon {
     font-size: 0.9rem;
+  }
+
+  .category-item {
+    display: inline-block;
+    padding: 4px 12px;
+    color: #606266;
+    background-color: #f5f7fa;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: #ecf5ff;
+      color: #409eff;
+      transform: translateY(-2px);
+    }
   }
 
   .category a {
@@ -375,31 +509,22 @@ onMounted(() => {
 }
 
 .article-tags {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-bottom: 30px;
-  padding-top: 20px;
+  margin-bottom: 20px;
+  padding-top: 15px;
   border-top: 1px solid #f0f0f0;
 
   .tag-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 14px;
-    background-color: #f5f7fa;
-    color: #606266;
-    border-radius: 20px;
-    font-size: 0.9rem;
+    display: inline-block;
+    padding: 4px 12px;
+    margin-right: 8px;
+    color: white;
+    border-radius: 12px;
+    font-size: 0.85rem;
     transition: all 0.3s ease;
 
     &:hover {
-      background-color: #ecf5ff;
-      color: #409eff;
-    }
-
-    .el-icon {
-      font-size: 0.85rem;
+      opacity: 0.8;
+      transform: translateY(-2px);
     }
   }
 }
@@ -415,17 +540,36 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 20px;
+    padding: 12px 24px;
     background-color: #f5f7fa;
     color: #606266;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    font-weight: 500;
 
     &:hover {
       background-color: #ecf5ff;
       color: #409eff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+    }
+
+    &.active {
+      background-color: #ecf5ff;
+      color: #409eff;
+      box-shadow: 0 2px 8px rgba(64, 158, 255, 0.2);
+    }
+
+    .liked {
+      color: #f56c6c;
+      font-size: 1.2rem;
+    }
+
+    .favorited {
+      color: #e6a23c;
+      font-size: 1.2rem;
     }
   }
 }

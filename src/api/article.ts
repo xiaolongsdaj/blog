@@ -22,7 +22,7 @@ export interface Article {
   userId: number
   categoryId: number | null
   category: { id: number; name: string; slug: string } | null
-  tags: Array<{ id: number; name: string; slug: string }>
+  tags: Array<{name: string}>
   user: { id: number; username: string; avatar: string | null }
   _count: { comments: number; likes: number }
 }
@@ -68,8 +68,8 @@ const articleApi = {
   },
 
   // 搜索文章
-  searchArticles: async (keyword: string, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
-    const params = { page, limit, keyword: keyword };
+  searchArticles: async (search: string, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    const params = { page, limit, search: search };
     return apiClient.get('/api/articles', { params });
   },
 
@@ -99,12 +99,24 @@ const articleApi = {
 
   // 获取分类列表
   getCategories: async (): Promise<ApiResponse<Category[]>> => {
-    return apiClient.get('/api/categories')
+    return apiClient.get('/api/articles/categories')
   },
 
   // 获取标签列表
   getTags: async (): Promise<ApiResponse<Tag[]>> => {
-    return apiClient.get('/api/tags')
+    return apiClient.get('/api/articles/tags')
+  },
+
+  // 获取分类下的文章
+  getArticlesByCategory: async (categoryName: string, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    const params = { page, limit, category: categoryName }
+    return apiClient.get('/api/articles', { params })
+  },
+
+  // 获取标签下的文章
+  getArticlesByTag: async (tagName: string, page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    const params = { page, limit, tag: tagName }
+    return apiClient.get('/api/articles', { params })
   },
 
   // // 增加阅读量
@@ -117,6 +129,35 @@ const articleApi = {
   //   return apiClient.post(`/articles/${id}/comments/count`)
   // },
 
+  // 点赞文章
+  likeArticle: async (articleId: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/api/articles/${articleId}/like`)
+  },
+
+  // 取消点赞文章
+  unlikeArticle: async (articleId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/api/articles/${articleId}/like`)
+  },
+
+  // 收藏文章
+  favoriteArticle: async (articleId: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/api/articles/${articleId}/favorite`)
+  },
+
+  // 取消收藏文章
+  unfavoriteArticle: async (articleId: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/api/articles/${articleId}/favorite`)
+  },
+
+  // 获取用户收藏的文章列表
+  getUserFavoriteArticles: async (page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    return apiClient.get('/api/articles/user/favorites', { params: { page, limit } })
+  },
+
+  // 获取用户点赞的文章列表
+  getUserLikedArticles: async (page: number = 1, limit: number = 10): Promise<ApiResponse<PaginationResponse<Article>>> => {
+    return apiClient.get('/api/articles/user/liked', { params: { page, limit } })
+  },
 
 }
 

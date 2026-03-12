@@ -100,10 +100,12 @@ const updateUserProfile = async () => {
 const handleAvatarUpload = async (req: any) => {
   const file = req.file;
   try {
-    const avatarUrl = await userStore.uploadAvatar(file);
+    // 假设 userStore 中已有上传头像的 action，若不存在需自行实现
+    // 假设 userStore 没有 uploadAvatar 方法，直接调用 updateUserInfo 更新头像
+    const avatarUrl = await userStore.updateUserInfo({ avatar: file });
     if (avatarUrl) {
       // 更新本地用户信息
-      userInfo.avatar = avatarUrl;
+      userInfo.avatar = typeof avatarUrl === 'string' ? avatarUrl : avatarUrl.avatar;
       ElMessage.success('头像上传成功');
       emit('update', userInfo);
     } else {

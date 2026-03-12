@@ -12,19 +12,10 @@ interface UserState {
 
 export const useUserStore = defineStore('user', {
   state: (): UserState => ({
-    userInfo: (() => {
-      const storedUserInfo = localStorage.getItem('userInfo');
-      try {
-        return storedUserInfo ? JSON.parse(storedUserInfo) : null;
-      } catch {
-        // 处理无效的JSON数据
-        localStorage.removeItem('userInfo');
-        return null;
-      }
-    })(),
+    userInfo: null,
     token: localStorage.getItem('accessToken'),
     isLoggedIn: !!localStorage.getItem('accessToken')
-  }), 
+  }),
 
   actions: {
     // 登录
@@ -37,17 +28,20 @@ export const useUserStore = defineStore('user', {
         
         // 正确处理响应数据
         const { accessToken, user } = response.data || {}
-        console.log('登录成功:', response.data?.accessToken)
+         console.log('登录成功:', response.data?.accessToken)
         
         this.token = accessToken
         this.userInfo = user
         this.isLoggedIn = true
 
-        // 保存token和userInfo到本地存储
+        // 保存token到本地存储
         localStorage.setItem('accessToken', accessToken)
-        if (user) {
-          localStorage.setItem('userInfo', JSON.stringify(user))
-        }
+        // console.log('登录后状态:', {
+        //   token: this.token,
+        //   userInfo: this.userInfo,
+        //   isLoggedIn: this.isLoggedIn,
+        //   localStorageToken: localStorage.getItem('accessToken')
+        // })
 
         return true
       } catch (error) {
@@ -62,15 +56,14 @@ export const useUserStore = defineStore('user', {
         const registerData: RegisterRequest = { username, email, password, confirmPassword }
         const response = await userApi.register(registerData)
         
-        const { accessToken, user } = response.data || {}
-        
-        this.token = accessToken
-        this.userInfo = user
+        this.token = response.data?.accessToken
+        this.userInfo = response.data?.user
         this.isLoggedIn = true
 
-        // 保存token和userInfo到本地存储
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('userInfo', JSON.stringify(user))
+        // 保存token到本地存储
+        if (response.data?.accessToken) {
+          localStorage.setItem('accessToken', response.data.accessToken)
+        }
 
         return true
       } catch (error) {
@@ -85,43 +78,38 @@ export const useUserStore = defineStore('user', {
       this.userInfo = null
       this.isLoggedIn = false
 
-      // 清除本地存储中的token和userInfo
+      // 清除本地存储中的token
       localStorage.removeItem('accessToken')
-      localStorage.removeItem('userInfo')
     },
 
     // 获取用户信息
     async getUserInfo() {
       const token = this.token || localStorage.getItem('accessToken')
-      if (!token) return null
+      if (!token) {
+        return null
+      }
+
       try {
-        let userId = this.userInfo?.id
-        console.log('当前用户ID:', userId)
-        if (!userId) {
-          const storedUserInfo = localStorage.getItem('userInfo')
-          if (storedUserInfo) {
-            const parsedUserInfo = JSON.parse(storedUserInfo)
-            userId = parsedUserInfo.id
-          }
-        }
-        
-        if (!userId) {
-          console.error('获取用户信息失败: 无法获取用户ID')
+        const response = await userApi.getCurrentUser()
+        if (response && response.success && response.data) {
+          this.userInfo = response.data
+          this.isLoggedIn = true
+          return response.data
+        } else {
           return null
         }
-        
-        const response = await userApi.getCurrentUser(userId)
-        // 处理头像URL，确保只存储相对路径
-        if (response.avatar && response.avatar.includes('http')) {
-          response.avatar = response.avatar.replace('http://localhost:3000', '')
-        }
-        this.userInfo = response
-        // 更新localStorage中的用户信息
-        localStorage.setItem('userInfo', JSON.stringify(response))
-        return response
       } catch (error) {
         console.error('获取用户信息失败:', error)
         return null
+      }
+    },
+
+    // 初始化用户信息
+    async initialize() {
+      const token = this.token || localStorage.getItem('accessToken')
+      if (token) {
+        await this.getUserInfo()
+      } else {
       }
     },
 
@@ -129,10 +117,12 @@ export const useUserStore = defineStore('user', {
     async updateUserInfo(userData: Partial<User>) {
       try {
         const response = await userApi.updateUser(userData)
-        this.userInfo = response
-        // 更新localStorage中的用户信息
-        localStorage.setItem('userInfo', JSON.stringify(response))
-        return response
+        if (response && response.success && response.data) {
+          this.userInfo = response.data
+          return response.data
+        } else {
+          return null
+        }
       } catch (error) {
         console.error('更新用户信息失败:', error)
         return null
@@ -150,24 +140,18 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    // 上传头像
-    async uploadAvatar(file: File) {
-      try {
-        // 导入 uploadApi 以避免循环依赖
-        const { default: uploadApi } = await import('../api/upload')
-        const response = await uploadApi.uploadImage(file)
-        if (response.success && this.userInfo) {
-          // 处理头像URL，确保只存储相对路径
-          const avatarUrl = response.data.url
-          this.userInfo.avatar = avatarUrl.includes('http') ? avatarUrl.replace('http://localhost:3000', '') : avatarUrl
-          // 更新localStorage中的用户信息
-          localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
-        }
-        return response.success ? (response.data.url.includes('http') ? response.data.url.replace('http://localhost:3000', '') : response.data.url) : null
-      } catch (error) {
-        console.error('上传头像失败:', error)
-        return null
-      }
-    }
+    // 上传头像（暂时注释，因为API未实现）
+    // async uploadAvatar(file: File) {
+    //   try {
+    //     const response = await userApi.uploadAvatar(file)
+    //     if (this.userInfo) {
+    //       this.userInfo.avatar = response.avatar
+    //     }
+    //     return response.avatar
+    //   } catch (error) {
+    //     console.error('上传头像失败:', error)
+    //     return null
+    //   }
+    // }
   }
 })

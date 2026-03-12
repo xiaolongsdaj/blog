@@ -8,6 +8,21 @@
           {{ tagName }}
         </h1>
         <p class="page-description">共有 {{ articles.length }} 篇文章</p>
+        
+        <!-- 标签标签栏 -->
+        <div class="tag-tabs" v-if="limitedTags.length > 0">
+          <el-tag
+            v-for="tag in limitedTags"
+            :key="tag.id"
+            :type="tag.id === tagId ? 'success' : ''"
+            :effect="tag.id === tagId ? 'dark' : 'plain'"
+            class="tag-tag"
+            @click="switchTag(tag.id)"
+          >
+            {{ tag.name }}
+            
+          </el-tag>
+        </div>
       </div>
 
       <!-- 文章列表 -->
@@ -16,61 +31,15 @@
           <el-skeleton :rows="5" animated />
         </div>
 
-        <div v-else-if="articles.length > 0">
-          <div 
-            v-for="article in articles" 
-            :key="article.id"
-            class="article-item"
-          >
-            <div class="article-info">
-              <h3 class="article-title">
-                <router-link :to="{ name: 'ArticleDetail', params: { id: article.id } }">
-                  {{ article.title }}
-                </router-link>
-              </h3>
-              <p class="article-excerpt">{{ article.summary }}</p>
-              <div class="article-meta">
-                <span class="date">
-                  <el-icon><Calendar /></el-icon>
-                  {{ formatDate(article.createdAt) }}
-                </span>
-                <span class="category">
-                  <el-icon><Collection /></el-icon>
-                  <router-link v-if="article.category" :to="{ name: 'CategoryArticles', params: { id: article.category.id } }">
-                    {{ article.category.name }}
-                  </router-link>
-                  <span v-else>无分类</span>
-                </span>
-                <span class="views">
-                  <el-icon><View /></el-icon>
-                  {{ article.viewCount }}
-                </span>
-                <span class="comments">
-                  <el-icon><ChatDotRound /></el-icon>
-                  {{ article.commentCount }}
-                </span>
-              </div>
-              
-              <!-- 文章标签 -->
-              <div class="article-tags">
-                <router-link 
-                  v-for="tag in article.tags" 
-                  :key="tag.id"
-                  :to="{ name: 'TagArticles', params: { id: tag.id } }"
-                  class="tag-item"
-                >
-                  <el-icon><Label /></el-icon>
-                  {{ tag.name }}
-                </router-link>
-              </div>
-            </div>
-            <div v-if="article.coverImage" class="article-cover">
-              <router-link :to="{ name: 'ArticleDetail', params: { id: article.id } }">
-                <img :src="article.coverImage" :alt="article.title" loading="lazy" />
-              </router-link>
-            </div>
-          </div>
-        </div>
+        <ArticleCard 
+          v-else-if="articles.length > 0"
+          v-for="article in articles" 
+          :key="article.id"
+          :article="{
+            ...article,
+            tags: article.tags.map((t: any) => ({ id: t.id ?? 0, name: t.name }))
+          }"
+        />
 
         <!-- 无文章提示 -->
         <div v-else class="no-articles">
@@ -99,14 +68,17 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useArticleStore } from '../stores/article'
+import ArticleCard from '../components/common/ArticleCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 const articleStore = useArticleStore()
 
 // 状态
 const loading = ref(true)
+const tagsLoading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
@@ -117,16 +89,22 @@ const tagId = computed(() => Number(route.params.id))
 const articles = computed(() => articleStore.articles)
 const total = computed(() => articleStore.total)
 
+// 获取标签列表
+const tags = computed(() => articleStore.tags)
+
+// 限制标签数量为前10个
+const limitedTags = computed(() => tags.value.slice(0, 10))
+
 // 标签名称
 const tagName = computed(() => {
   const tag = articleStore.tags.find(tag => tag.id === tagId.value)
   return tag ? tag.name : '标签'
 })
 
-// 格式化日期
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`
+// 切换标签
+const switchTag = (id: number) => {
+  if (id === tagId.value) return
+  router.push({ name: 'TagArticles', params: { id } })
 }
 
 // 加载标签文章
@@ -146,6 +124,18 @@ const loadTagArticles = async () => {
   }
 }
 
+// 加载标签列表
+const loadTags = async () => {
+  tagsLoading.value = true
+  try {
+    await articleStore.getTags()
+  } catch (error) {
+    console.error('加载标签列表失败:', error)
+  } finally {
+    tagsLoading.value = false
+  }
+}
+
 // 分页处理
 const handleSizeChange = (size: number) => {
   pageSize.value = size
@@ -159,14 +149,19 @@ const handleCurrentChange = (page: number) => {
 }
 
 // 监听路由变化
-watch(() => route.params.id, () => {
+watch(() => route.params.id, async () => {
   currentPage.value = 1
-  loadTagArticles()
+  // 先加载标签列表，确保标签名称能正确获取
+  await loadTags()
+  await loadTagArticles()
 })
 
 // 初始化
-onMounted(() => {
-  loadTagArticles()
+onMounted(async () => {
+  // 先加载标签列表
+  await loadTags()
+  // 再加载标签文章
+  await loadTagArticles()
 })
 </script>
 
@@ -204,6 +199,32 @@ onMounted(() => {
   .page-description {
     color: #909399;
     font-size: 1rem;
+    margin-bottom: 20px;
+  }
+
+  .tag-tabs {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+
+    .tag-tag {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.9rem;
+      padding: 6px 16px;
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+
+      .tag-count {
+        margin-left: 5px;
+        font-size: 0.8rem;
+        opacity: 0.8;
+      }
+    }
   }
 }
 
@@ -215,142 +236,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 30px;
-}
-
-.article-item {
-  display: flex;
-  gap: 30px;
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 25px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
-  }
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    padding: 20px;
-  }
-}
-
-.article-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.article-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #303133;
-  line-height: 1.4;
-
-  a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #409eff;
-    }
-  }
-
-  @media (max-width: 768px) {
-    font-size: 1.3rem;
-  }
-}
-
-.article-excerpt {
-  color: #606266;
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.article-meta {
-  display: flex;
-  gap: 20px;
-  font-size: 0.9rem;
-  color: #909399;
-  flex-wrap: wrap;
-
-  span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .el-icon {
-    font-size: 0.9rem;
-  }
-
-  .category a {
-    color: #909399;
-    text-decoration: none;
-    transition: color 0.3s ease;
-
-    &:hover {
-      color: #409eff;
-    }
-  }
-}
-
-.article-tags {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-
-  .tag-item {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 12px;
-    background-color: #f0f9eb;
-    color: #67c23a;
-    border-radius: 15px;
-    font-size: 0.85rem;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background-color: #ecf5ff;
-      color: #409eff;
-    }
-
-    .el-icon {
-      font-size: 0.8rem;
-    }
-  }
-}
-
-.article-cover {
-  flex-shrink: 0;
-  width: 200px;
-  height: 150px;
-  border-radius: 8px;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-  }
-
-  &:hover img {
-    transform: scale(1.05);
-  }
-
-  @media (max-width: 768px) {
-    width: 100%;
-    height: 200px;
-  }
+  margin-bottom: 40px;
 }
 
 .no-articles {

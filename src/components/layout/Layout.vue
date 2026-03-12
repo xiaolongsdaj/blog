@@ -14,15 +14,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from './Header.vue'
 import Footer from './Footer.vue'
 import { useUIStore } from '../../stores/ui'
+import { useUserStore } from '../../stores/user'
 
 const uiStore = useUIStore()
+const userStore = useUserStore()
 const sidebarVisible = ref(uiStore.sidebarVisible)
 const route = useRoute()
+
+// 初始化用户信息
+onMounted(async () => {  
+  await userStore.initialize()
+})
 
 // 监听路由变化，隐藏移动端菜单
 watch(() => route.path, () => {

@@ -27,6 +27,14 @@
               <el-icon><Document /></el-icon>
               <span>我的文章</span>
             </el-menu-item>
+            <el-menu-item index="favorites">
+              <el-icon><CollectionTag /></el-icon>
+              <span>我的收藏</span>
+            </el-menu-item>
+            <el-menu-item index="liked">
+              <el-icon><StarFilled /></el-icon>
+              <span>我的点赞</span>
+            </el-menu-item>
             <el-menu-item index="comments">
               <el-icon><ChatDotRound /></el-icon>
               <span>我的评论</span>
@@ -37,10 +45,10 @@
             </el-menu-item>
           </el-menu>
 
-          <el-button type="danger" @click="handleLogout" class="logout-btn">
+          <!-- <el-button type="danger" @click="handleLogout" class="logout-btn">
             <el-icon><SwitchButton /></el-icon>
             退出登录
-          </el-button>
+          </el-button> -->
         </div>
 
         <!-- 右侧内容 -->
@@ -57,6 +65,22 @@
           <!-- 我的文章 -->
           <div v-if="activeTab === 'articles'" class="tab-content">
             <Articles 
+              :user-id="userStore.userInfo?.id || 0"
+              @refresh="refreshData"
+            />
+          </div>
+
+          <!-- 我的收藏 -->
+          <div v-if="activeTab === 'favorites'" class="tab-content">
+            <Favorites 
+              :user-id="userStore.userInfo?.id || 0"
+              @refresh="refreshData"
+            />
+          </div>
+
+          <!-- 我的点赞 -->
+          <div v-if="activeTab === 'liked'" class="tab-content">
+            <Liked 
               :user-id="userStore.userInfo?.id || 0"
               @refresh="refreshData"
             />
@@ -85,13 +109,14 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/user'
-import { ElMessage } from 'element-plus'
 
 // 导入组件
 import Profile from '../components/user-center/Profile.vue'
 import Articles from '../components/user-center/Articles.vue'
 import Comments from '../components/user-center/Comments.vue'
 import Settings from '../components/user-center/Settings.vue'
+import Favorites from '../components/user-center/Favorites.vue'
+import Liked from '../components/user-center/Liked.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -121,12 +146,6 @@ const refreshData = () => {
   userStore.getUserInfo()
 }
 
-// 退出登录
-const handleLogout = () => {
-  userStore.logout()
-  ElMessage.success('退出登录成功')
-  router.push('/')
-}
 
 // 初始化
 onMounted(() => {
@@ -535,6 +554,8 @@ watch(
   text-align: center;
   padding: 60px 0;
 }
+
+
 
 /* 分页 */
 .el-pagination {
